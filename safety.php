@@ -247,7 +247,11 @@ function report_exception ($e) {
   }
 
   //_send_exception_report('exception', $e);
-  _send_exception_report($e);
+  //_send_exception_report($e);
+  
+  if (!isset(_safety_report_data::$_reports))
+    _safety_report_data::$_reports = array();
+  _safety_report_data::$_reports[] = $e;
 
   /*
   $subject = "Uncaught exception (" . $_SERVER['baseHostname'] . ' - ' . (isset($_SERVER['environment']) ? $_SERVER['environment'] : 'unknown') . "): " . $e->getMessage();
@@ -578,15 +582,22 @@ function _send_exception_report ($report) {
   if (_safety_report_data::$_configuration['report_url']) {
     $postData = 'data=' . urlencode(json_encode($report));
 
-    $curl = curl_init(_safety_report_data::$_configuration['report_url']);
+//$t = microtime(true);
+//    $a = file_get_contents("http://www.gooogle.com");
+//echo microtime(true) - $t;
+//exit;
+    $curl = curl_init(rtrim(_safety_report_data::$_configuration['report_url'], '/') . '/report/');
+    //$curl = curl_init("http://www.gooogle.com");
     curl_setopt($curl, CURLOPT_POST, 1);
     curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+    //curl_setopt($curl, CURLOPT_POSTFIELDS, "q=5");
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($curl, CURLOPT_HEADER, 0);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 0);
-    curl_setopt($curl, CURLOPT_TIMEOUT_MS, 100);
+    curl_setopt($curl, CURLOPT_TIMEOUT_MS, 2000);
 
+//$t = microtime(true);
     $response = curl_exec($curl);
     // assertTrue($response !== false);
     //echo microtime(true) - $t;
@@ -716,6 +727,7 @@ function safety_report_data () {
 
 class _safety_report_data {
 
+  public static $_reports;
   public static $_variables;
   public static $_configuration;
   private static $_instance;
@@ -731,6 +743,14 @@ class _safety_report_data {
       $this->$name = $value;
   }
   
+}
+
+
+function send_safety_reports () {
+  sleep(10);
+  if (isset(_safety_report_data::$_reports))
+    foreach (_safety_report_data::$_reports as $report)
+      _send_exception_report($report);
 }
 
 
@@ -757,6 +777,7 @@ if (_safety_report_data::$_configuration['enabled']) {
   set_exception_handler('uncaught_exception_handler');
   set_error_handler('exception_error_handler');
   register_shutdown_function('shutdown_error_handler');
+  register_shutdown_function('send_safety_reports');
 }
 
 
