@@ -595,11 +595,15 @@ function _send_exception_report ($report) {
     curl_setopt($curl, CURLOPT_HEADER, 0);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 0);
-    curl_setopt($curl, CURLOPT_TIMEOUT_MS, 2000);
+    curl_setopt($curl, CURLOPT_TIMEOUT_MS, 3000);
 
 //$t = microtime(true);
     $response = curl_exec($curl);
     // assertTrue($response !== false);
+    
+//echo microtime(true) - $t;
+    //var_dump(curl_error($curl));
+    //var_dump(curl_getinfo($curl));
     //echo microtime(true) - $t;
     //var_dump($response);
     //echo "OK";
@@ -667,12 +671,14 @@ function exception_to_stdclass ($exception) {
     unset($traceItem->args);
     $traceItem->arguments = $args;
     
-    $traceItem->file = str_replace(array('\\', '/'), array('/', '/'), $traceItem->file);
+    if (isset($traceItem->file))
+      $traceItem->file = str_replace(array('\\', '/'), array('/', '/'), $traceItem->file);
     //var_dump($traceItem->file);exit;
 
     //$file = str_replace(array('\\', '/'), array('/', '/'), $exception->getFile());
     
-    $traceItem->snippet = extract_code_snippet($traceItem->file, $traceItem->line);
+    if (isset($traceItem->file, $traceItem->line))
+      $traceItem->snippet = extract_code_snippet($traceItem->file, $traceItem->line);
     
     /*
     $traceItem->snippet = (object) array();
@@ -747,7 +753,7 @@ class _safety_report_data {
 
 
 function send_safety_reports () {
-  sleep(10);
+  //sleep(10);
   if (isset(_safety_report_data::$_reports))
     foreach (_safety_report_data::$_reports as $report)
       _send_exception_report($report);
