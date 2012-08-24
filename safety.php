@@ -465,23 +465,25 @@ function generate_exception_report ($e) {
 
   //if (isset($baseCodePath) && substr($file, 0, strlen($baseCodePath)) == dirname($baseCodePath))
   //  $relativeFile = ltrim(substr($file, strlen($baseCodePath), '/\\'));
-    
-  $fileContent = file_get_contents($file);
-  //$currentLine = $e->getLine() - 10 >= 0 ? $e->getLine() - 10 : 0;
-  $codeSnippetBeginLine = $e->getLine() - 10 >= 0 ? $e->getLine() - 10 : 0;
-  $codeSnippetLines = array_slice(explode("\n", $fileContent), $codeSnippetBeginLine, 20);
-  /*
-  foreach ($codeSnippetLines as $k => $codeSnippetLine) {
-    $currentLine++;
-    if (!isset($maxLineNumberLength))
-      $maxLineNumberLength = strlen($currentLine) + 1;
-    //$codeSnippetLines[$k] = ($currentLine == $e->getLine() ? str_repeat('*', $maxLineNumberLength) : str_pad($currentLine, $maxLineNumberLength, '0', STR_PAD_LEFT))
-    //  . " " . $codeSnippetLine;
-    $codeSnippetLines[$k] = str_pad($currentLine, $maxLineNumberLength, '0', STR_PAD_LEFT) . " " . ($currentLine == $e->getLine() ? ">" : " ") . " | " . $codeSnippetLine;
+  
+  if (is_file($file)) {
+    $fileContent = file_get_contents($file);
+    //$currentLine = $e->getLine() - 10 >= 0 ? $e->getLine() - 10 : 0;
+    $codeSnippetBeginLine = $e->getLine() - 10 >= 0 ? $e->getLine() - 10 : 0;
+    $codeSnippetLines = array_slice(explode("\n", $fileContent), $codeSnippetBeginLine, 20);
+    /*
+    foreach ($codeSnippetLines as $k => $codeSnippetLine) {
+      $currentLine++;
+      if (!isset($maxLineNumberLength))
+        $maxLineNumberLength = strlen($currentLine) + 1;
+      //$codeSnippetLines[$k] = ($currentLine == $e->getLine() ? str_repeat('*', $maxLineNumberLength) : str_pad($currentLine, $maxLineNumberLength, '0', STR_PAD_LEFT))
+      //  . " " . $codeSnippetLine;
+      $codeSnippetLines[$k] = str_pad($currentLine, $maxLineNumberLength, '0', STR_PAD_LEFT) . " " . ($currentLine == $e->getLine() ? ">" : " ") . " | " . $codeSnippetLine;
+    }
+    /**/
+    $codeSnippet = implode("\n", $codeSnippetLines);
   }
-  /**/
-  $codeSnippet = implode("\n", $codeSnippetLines);
-
+  
   //ob_start();
   //echo "<!DOCTYPE html><html><head><title>" . htmlspecialchars($e->getMessage()) . "</title></head><body>";
   
@@ -645,7 +647,8 @@ function exception_to_stdclass ($exception) {
   $rawException->code = $exception->getCode();
   $rawException->file = str_replace(array('\\', '/'), array('/', '/'), $exception->getFile());
   $rawException->line = $exception->getLine();
-  $rawException->snippet = extract_code_snippet($rawException->file, $rawException->line);
+  if (is_file($rawException->file))
+    $rawException->snippet = extract_code_snippet($rawException->file, $rawException->line);
   if (isset($exception->types))
     $rawException->types = $exception->types;
   $rawException->trace = $exception->getTrace();
@@ -677,7 +680,7 @@ function exception_to_stdclass ($exception) {
 
     //$file = str_replace(array('\\', '/'), array('/', '/'), $exception->getFile());
     
-    if (isset($traceItem->file, $traceItem->line))
+    if (isset($traceItem->file, $traceItem->line) && is_file($traceItem->file))
       $traceItem->snippet = extract_code_snippet($traceItem->file, $traceItem->line);
     
     /*

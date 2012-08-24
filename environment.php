@@ -2,6 +2,9 @@
 
 /** defaults - do not change **/
 
+if (isset($_SERVER['default_environment_configuration']) && $_SERVER['default_environment_configuration'])
+  require($_SERVER['default_environment_configuration']);
+
 if (isset($_SERVER['environment_configuration']) && $_SERVER['environment_configuration'])
   require($_SERVER['environment_configuration']);
 
