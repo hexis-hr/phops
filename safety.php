@@ -166,6 +166,9 @@ function generate_exception_report ($e) {
   
   $report->time = microtime(true);
   
+  if (isset($_SERVER['project']))
+    $report->project = $_SERVER['project'];
+  
   $report->serverInformation = (object) array();
   $report->serverInformation->uname = php_uname();
   if (function_exists('gethostname'))
