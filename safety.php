@@ -155,7 +155,7 @@ function generate_exception_report ($e) {
   
   $file = str_replace(array('\\', '/'), array('/', '/'), $e->getFile());
   if (isset($_SERVER['SCRIPT_FILENAME']))
-    $baseCodePath = str_replace(array('\\', '/'), array('/', '/'), dirname($_SERVER['SCRIPT_FILENAME']));
+    $baseCodePath = str_replace(array('\\', '/'), array('/', '/'), realpath(dirname($_SERVER['SCRIPT_FILENAME'])));
   
   if (is_file($file)) {
     $fileContent = file_get_contents($file);
