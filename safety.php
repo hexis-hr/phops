@@ -144,6 +144,8 @@ function report_exception ($e) {
     echo "</pre>";
   }
 
+  debugMode and debugMessage('report_exception(): ' . (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . get_class($e) . ": " . $e->getMessage());
+
 }
 
 function generate_exception_report ($e) {
