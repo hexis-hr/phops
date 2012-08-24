@@ -11,6 +11,17 @@ function debugMessage ($message) {
 
   $backtrace = debug_backtrace();
   
+  $i = 0;
+  while (isset($backtrace[$i])) {
+    $backtraceEntry = (object) $backtrace[$i];
+    $i++;
+    if (isset($backtraceEntry->file) && substr($backtraceEntry->file, 0, strlen(realpath($_SERVER['basePath']))) != realpath($_SERVER['basePath']))
+      continue;
+    if (isset($backtraceEntry->file) && realpath($backtraceEntry->file) == realpath(__FILE__))
+      continue;
+    break;
+  }
+  
   // format:
   // info is the message type (optional)
   // #5/6 is the request id / session id
@@ -24,9 +35,20 @@ function debugMessage ($message) {
   
   if (!session_id())
     session_start();
+  
+  if (!isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog']))
+    $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'] = array();
+  
+  $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'][] = (object) array(
+    'time' => microtime(true),
+    'file' => isset($backtraceEntry, $backtraceEntry->file) ? str_replace(array('\\', '/'), array('/', '/'), realpath($backtraceEntry->file)) : null,
+    'line' => isset($backtraceEntry, $backtraceEntry->line) ? $backtraceEntry->line : null,
+    'type' => isset($type) ? $type : null,
+    'message' => $message,
+  );
 
   file_put_contents($_SERVER['debugPath'],
-    "[" . date("Y-m-d H:i:s") . "] #{$_SERVER['requestId']}/" . session_id() . " ({$backtrace[0]['file']}:{$backtrace[0]['line']})" . (isset($type) ? " $type" : '') . "\n" .
+    "[" . date("Y-m-d H:i:s") . "] #{$_SERVER['requestId']}/" . session_id() . (isset($backtraceEntry->file) ? " ({$backtraceEntry->file}:{$backtraceEntry->line})" : '') . (isset($type) ? " $type" : '') . "\n" .
     "  $message\n", FILE_APPEND | LOCK_EX);
 
 }

@@ -224,6 +224,9 @@ function generate_exception_report ($e) {
   $report->additional = (object) array();
   foreach (safety_report_data() as $name => $value)
     $report->additional->$name = $value;
+  
+  if (isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog']))
+    $report->debug = $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'];
 
   return $report;
   
