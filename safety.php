@@ -107,7 +107,7 @@ function report_caught_exception ($e) {
   
   foreach ($arguments as $index => $argument) {
     if (is_object($argument) && $argument instanceof Exception) {
-      $arguments[$index] = clone $arguments[$index];
+      $arguments[$index] = exception_to_stdclass($arguments[$index]);
       $arguments[$index]->caught = true;
     }
   }
@@ -140,7 +140,7 @@ function report_exception ($e) {
   if (_safety_report_data::$_configuration['display_errors']) {
     echo "<pre>";
     echo (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . get_class($e) . ": <br />";
-    echo htmlspecialchars($e);
+    echo htmlspecialchars($e instanceof Exception ? $e : $e->stringOf);
     echo "</pre>";
   }
 
@@ -194,7 +194,7 @@ function generate_exception_report ($e) {
   
   $code = $report->exception;
   foreach (array_merge(array($report->exception), $report->exception->trace) as $traceItem) {
-    $withinBasePath = isset($baseCodePath) && substr($traceItem->file, 0, strlen($baseCodePath)) == $baseCodePath;
+    $withinBasePath = isset($baseCodePath, $traceItem->file) && substr($traceItem->file, 0, strlen($baseCodePath)) == $baseCodePath;
     if ($withinBasePath) {
       $code = $traceItem;
       break;
@@ -238,7 +238,7 @@ function generate_exception_report ($e) {
 
 function _send_exception_report ($report) {
 
-  if (is_object($report) && $report instanceof Exception)
+  if (is_object($report) && ($report instanceof Exception || isset($report->__uLkwfIktHDm7mUUfbN0T2WTS_isException)))
     $report = generate_exception_report($report);
 
   if (_safety_report_data::$_configuration['report_url']) {
@@ -262,6 +262,7 @@ function _send_exception_report ($report) {
 
 function exception_to_stdclass ($exception) {
   $rawException = (object) array();
+  $rawException->__uLkwfIktHDm7mUUfbN0T2WTS_isException = true;
   $rawException->{'class'} = get_class($exception);
   if (isset($exception->caught))
     $rawException->caught = $exception->caught;
@@ -304,6 +305,9 @@ function exception_to_stdclass ($exception) {
 
   if ($exception->getPrevious() !== null)
     $rawException->previous = exception_to_stdclass($exception->getPrevious());
+  
+  $rawException->stringOf = (string) $exception;
+  
   return $rawException;
 }
 
