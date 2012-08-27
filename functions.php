@@ -131,3 +131,15 @@ function array_merge_recursive_overwrite () {
   return $destination;
 }
 
+function postToURL ($url, $postData, $timeout = 3000) {
+  $curl = curl_init($url);
+  curl_setopt($curl, CURLOPT_POST, 1);
+  curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+  curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
+  curl_setopt($curl, CURLOPT_HEADER, 0);
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl, CURLOPT_TIMEOUT, 0);
+  curl_setopt($curl, CURLOPT_TIMEOUT_MS, $timeout);
+  return curl_exec($curl);
+}
+
