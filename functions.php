@@ -116,3 +116,18 @@ function issetBit ($string, $offset) {
   return ord($string[floor($offset / 8)]) & pow(2, 7 - $offset % 8) ? true : false;
 }
 
+function array_merge_recursive_overwrite () {
+  $args = func_get_args();
+  $destination = array();
+  foreach ($args as $arr) {
+    foreach ($arr as $key => $value) {
+      if (array_key_exists($key, $destination) && is_array($value))
+        $destination[$key] = array_merge_recursive_overwrite($destination[$key], $arr[$key]);
+      else
+        $destination[$key] = $value;
+    }
+  }
+
+  return $destination;
+}
+
