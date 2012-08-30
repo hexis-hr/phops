@@ -41,7 +41,7 @@ if (isset($_SERVER['safety']))
 
 
 
-function assertTrue ($condition, $message = null) {
+function assertTrue ($condition, $message = 'Assertion failure') {
   $args = func_get_args();
   $class = isset($args[2]) && is_string($args[2]) ? $args[2] : 'AssertException';
   $types = isset($args[2]) && is_array($args[2]) ? $args[2] : (isset($args[3]) ? $args[3] : null);
@@ -139,12 +139,12 @@ function report_exception ($e) {
   
   if (_safety_report_data::$_configuration['display_errors']) {
     echo "<pre>";
-    echo (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . get_class($e) . ": <br />";
+    echo (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . ($e instanceof Exception ? get_class($e) : $e->{'class'}) . ": <br />";
     echo htmlspecialchars($e instanceof Exception ? $e : $e->stringOf);
     echo "</pre>";
   }
 
-  debugMode and debugMessage('report_exception(): ' . (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . get_class($e) . ": " . $e->getMessage());
+  debugMode and debugMessage('report_exception(): ' . (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . ($e instanceof Exception ? get_class($e) : $e->{'class'}) . ": " . ($e instanceof Exception ? $e->getMessage() : $e->message));
 
 }
 
