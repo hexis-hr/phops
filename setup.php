@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * This software is the property of its authors.
+ * See the copyright.txt file for more details.
+ *
+ */
+
 function remove ($path) {
   if (!file_exists($path) && !is_link($path))
     return;

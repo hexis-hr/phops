@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * This software is the property of its authors.
+ * See the copyright.txt file for more details.
+ *
+ */
+
 function send_mail ($addresses, $subject, $message, $headers) {
 
   foreach ((array) $addresses as $address) {

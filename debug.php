@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * This software is the property of its authors.
+ * See the copyright.txt file for more details.
+ *
+ */
+
 if (!defined('debugMode'))
   define('debugMode', $_SERVER['debugMode']);
 
@@ -35,21 +41,25 @@ function debugMessage ($message) {
   
   if (!session_id())
     session_start();
+    
+  $timestamp = microtime(true);
   
   if (!isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog']))
     $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'] = array();
   
   $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'][] = (object) array(
-    'time' => microtime(true),
+    'time' => $timestamp,
     'file' => isset($backtraceEntry, $backtraceEntry->file) ? str_replace(array('\\', '/'), array('/', '/'), realpath($backtraceEntry->file)) : null,
     'line' => isset($backtraceEntry, $backtraceEntry->line) ? $backtraceEntry->line : null,
     'type' => isset($type) ? $type : null,
+    'call' => (isset($backtraceEntry->{'class'}) ? $backtraceEntry->{'class'} . $backtraceEntry->{'type'} : '') . $backtraceEntry->{'function'} . '()',
     'message' => $message,
   );
 
-  file_put_contents($_SERVER['debugPath'],
-    "[" . date("Y-m-d H:i:s") . "] #{$_SERVER['requestId']}/" . session_id() . (isset($backtraceEntry->file) ? " ({$backtraceEntry->file}:{$backtraceEntry->line})" : '') . (isset($type) ? " $type" : '') . "\n" .
-    "  $message\n", FILE_APPEND | LOCK_EX);
+  if (isset($_SERVER['debugPath']))
+    file_put_contents($_SERVER['debugPath'],
+      "[" . date("Y-m-d H:i:s", $timestamp) . "." . substr(round($timestamp - floor($timestamp), 6), 2) . "] #{$_SERVER['requestId']}/" . session_id() . (isset($backtraceEntry->file) ? " ({$backtraceEntry->file}:{$backtraceEntry->line})" : '') . (isset($type) ? " $type" : '') . "\n" .
+      "  " . (isset($backtraceEntry->{'class'}) ? $backtraceEntry->{'class'} . $backtraceEntry->{'type'} : '') . $backtraceEntry->{'function'} . "(): $message\n", FILE_APPEND | LOCK_EX);
 
 }
 

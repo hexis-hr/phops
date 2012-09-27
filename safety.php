@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * This software is the property of its authors.
+ * See the copyright.txt file for more details.
+ *
+ */
+
 /**
  * This file contains tools that enforce safe programing.
  *
@@ -40,7 +46,7 @@ if (isset($_SERVER['safety']))
 
 
 
-
+// assertTrue($condition, $message [, $class] [, $types]);
 function assertTrue ($condition, $message = 'Assertion failure') {
   $args = func_get_args();
   $class = isset($args[2]) && is_string($args[2]) ? $args[2] : 'AssertException';
@@ -68,6 +74,7 @@ function rethrowIfNot (Exception $e, $types) {
 
 class AssertException extends Exception {}
 class ShutdownException extends ErrorException {}
+class TimeLimitException extends Exception {}
 
 
 
@@ -78,6 +85,15 @@ function exception_error_handler ($errno, $errstr, $errfile, $errline) {
     throw $e;
   if (_safety_report_data::$_configuration['error_reporting'] & $errno)
     report_exception($e);
+}
+
+function shutdown_time_limit () {
+  $executionTime = microtime(true) - _safety_report_data::$_initTime;
+  if ($executionTime > _safety_report_data::$_configuration['time_limit']) {
+    $timeLimitException = new TimeLimitException("Execution time of $executionTime second(s) exceeds time limit of " . _safety_report_data::$_configuration['time_limit'] . " second(s)");
+    $timeLimitException->digest = 'H8g94sqWn5dFmRoNIZF539r7';
+    report_exception($timeLimitException);
+  }
 }
 
 function shutdown_error_handler () {
@@ -137,7 +153,7 @@ function report_exception ($e) {
     _safety_report_data::$_reports = array();
   _safety_report_data::$_reports[] = $e;
   
-  if (_safety_report_data::$_configuration['display_errors']) {
+  if (_safety_report_data::$_configuration['display_errors'] && !($e instanceof TimeLimitException)) {
     echo "<pre>";
     echo (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . ($e instanceof Exception ? get_class($e) : $e->{'class'}) . ": <br />";
     echo htmlspecialchars($e instanceof Exception ? $e : $e->stringOf);
@@ -148,20 +164,26 @@ function report_exception ($e) {
 
 }
 
+function set_safe_time_limit ($seconds) {
+  _safety_report_data::$_configuration['time_limit'] = $seconds;
+}
+
 function generate_exception_report ($e) {
 
+  $exception = exception_to_stdclass($e);
+  
   if (!session_id())
     session_start();
   
   $report = (object) array();
   
-  $file = str_replace(array('\\', '/'), array('/', '/'), $e->getFile());
+  $file = str_replace(array('\\', '/'), array('/', '/'), $exception->file);
   if (isset($_SERVER['SCRIPT_FILENAME']))
     $baseCodePath = str_replace(array('\\', '/'), array('/', '/'), realpath(dirname($_SERVER['SCRIPT_FILENAME'])));
   
   if (is_file($file)) {
     $fileContent = file_get_contents($file);
-    $codeSnippetBeginLine = $e->getLine() - 10 >= 0 ? $e->getLine() - 10 : 0;
+    $codeSnippetBeginLine = $exception->line - 10 >= 0 ? $exception->line - 10 : 0;
     $codeSnippetLines = array_slice(explode("\n", $fileContent), $codeSnippetBeginLine, 20);
     $codeSnippet = implode("\n", $codeSnippetLines);
   }
@@ -189,13 +211,15 @@ function generate_exception_report ($e) {
   if (session_id())
     $report->request->session = session_id();
   
-  $report->exception = exception_to_stdclass($e);
-
+  $report->exception = $exception;
+  
+  if (isset($report->exception->digest))
+    $report->digest = $report->exception->digest;
   
   $code = $report->exception;
   foreach (array_merge(array($report->exception), $report->exception->trace) as $traceItem) {
-    $withinBasePath = isset($baseCodePath, $traceItem->file) && substr($traceItem->file, 0, strlen($baseCodePath)) == $baseCodePath;
-    if ($withinBasePath) {
+    //$withinBasePath = isset($baseCodePath, $traceItem->file) && substr($traceItem->file, 0, strlen($baseCodePath)) == $baseCodePath;
+    if (!$traceItem->isLibrary) {
       $code = $traceItem;
       break;
     }
@@ -204,9 +228,12 @@ function generate_exception_report ($e) {
   $report->code = (object) array();
   if (isset($baseCodePath))
     $report->code->basePath = $baseCodePath;
-  $report->code->file = $code->file;
-  $report->code->line = $code->line;
-  $report->code->snippet = $code->snippet;
+  if (isset($code->file))
+    $report->code->file = $code->file;
+  if (isset($code->line))
+    $report->code->line = $code->line;
+  if (isset($code->snippet))
+    $report->code->snippet = $code->snippet;
   
   $report->rawData = (object) array();
   
@@ -242,7 +269,12 @@ function _send_exception_report ($report) {
     $report = generate_exception_report($report);
 
   if (_safety_report_data::$_configuration['report_url']) {
-    $postData = 'data=' . urlencode(json_encode($report));
+    $jsonReport = json_encode($report);
+    if (strlen($jsonReport) > 60000) {
+      unset($report->exception->previous);
+      $jsonReport = json_encode($report);
+    }
+    $postData = 'data=' . urlencode($jsonReport);
 
     $curl = curl_init(rtrim(_safety_report_data::$_configuration['report_url'], '/') . '/report/');
     curl_setopt($curl, CURLOPT_POST, 1);
@@ -261,6 +293,8 @@ function _send_exception_report ($report) {
 }
 
 function exception_to_stdclass ($exception) {
+  if (isset($exception->__uLkwfIktHDm7mUUfbN0T2WTS_isException))
+    return $exception;
   $rawException = (object) array();
   $rawException->__uLkwfIktHDm7mUUfbN0T2WTS_isException = true;
   $rawException->{'class'} = get_class($exception);
@@ -270,32 +304,46 @@ function exception_to_stdclass ($exception) {
   $rawException->code = $exception->getCode();
   $rawException->file = str_replace(array('\\', '/'), array('/', '/'), $exception->getFile());
   $rawException->line = $exception->getLine();
+  $rawException->isLibrary = false;
+  if (isset(_safety_report_data::$_configuration['exclude_path']))
+    foreach (array(_safety_report_data::$_configuration['exclude_path']) as $libraryPath)
+      if (substr($rawException->file, 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')
+        $rawException->isLibrary = true;
   if (is_file($rawException->file))
     $rawException->snippet = extract_code_snippet($rawException->file, $rawException->line);
   if (isset($exception->types))
     $rawException->types = $exception->types;
+  if (isset($exception->digest))
+    $rawException->digest = $exception->digest;
   $rawException->trace = $exception->getTrace();
   
   foreach ($rawException->trace as $traceIndex => $traceItem) {
     $traceItem = (object) $traceItem;
     
     $args = array();
-    foreach ($traceItem->args as $argumentIndex => $argument) {
-      $args[$argumentIndex] = (object) array('type' => gettype($argument));
-      if (is_object($argument))
-        $args[$argumentIndex]->{'class'} = get_class($argument);
-      else if (is_array($argument))
-        $args[$argumentIndex]->length = count($argument);
-      else {
-        $args[$argumentIndex]->length = strlen($argument);
-        $args[$argumentIndex]->value = substr($argument, 0, 300);
+    if (isset($traceItem->args))
+      foreach ($traceItem->args as $argumentIndex => $argument) {
+        $args[$argumentIndex] = (object) array('type' => gettype($argument));
+        if (is_object($argument))
+          $args[$argumentIndex]->{'class'} = get_class($argument);
+        else if (is_array($argument))
+          $args[$argumentIndex]->length = count($argument);
+        else {
+          $args[$argumentIndex]->length = strlen($argument);
+          $args[$argumentIndex]->value = substr($argument, 0, 300);
+        }
       }
-    }
     unset($traceItem->args);
     $traceItem->arguments = $args;
     
     if (isset($traceItem->file))
       $traceItem->file = str_replace(array('\\', '/'), array('/', '/'), $traceItem->file);
+
+    $traceItem->isLibrary = false;
+    if (isset($traceItem->file, _safety_report_data::$_configuration['exclude_path']))
+      foreach (array(_safety_report_data::$_configuration['exclude_path']) as $libraryPath)
+        if (substr($traceItem->file, 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')
+          $traceItem->isLibrary = true;
     
     if (isset($traceItem->file, $traceItem->line) && is_file($traceItem->file))
       $traceItem->snippet = extract_code_snippet($traceItem->file, $traceItem->line);
@@ -326,6 +374,7 @@ function safety_report_data () {
 
 class _safety_report_data {
 
+  public static $_initTime;
   public static $_reports;
   public static $_variables;
   public static $_configuration;
@@ -344,6 +393,8 @@ class _safety_report_data {
   
 }
 
+_safety_report_data::$_initTime = microtime(true);
+
 
 function send_safety_reports () {
   if (isset(_safety_report_data::$_reports))
@@ -351,13 +402,16 @@ function send_safety_reports () {
       _send_exception_report($report);
 }
 
-
+function safety_shutdown_handler () {
+  shutdown_time_limit();
+  shutdown_error_handler();
+  send_safety_reports();
+}
 
 if (_safety_report_data::$_configuration['enabled']) {
   set_exception_handler('uncaught_exception_handler');
   set_error_handler('exception_error_handler');
-  register_shutdown_function('shutdown_error_handler');
-  register_shutdown_function('send_safety_reports');
+  register_shutdown_function('safety_shutdown_handler');
 }
 
 

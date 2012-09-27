@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * This software is the property of its authors.
+ * See the copyright.txt file for more details.
+ *
+ */
+
 
 // use UTC as default timezone if no timezone is set
 if (!ini_get("date.timezone"))

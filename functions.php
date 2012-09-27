@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * This software is the property of its authors.
+ * See the copyright.txt file for more details.
+ *
+ */
+
 function uuid () {
   return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
     // 32 bits for "time_low"
