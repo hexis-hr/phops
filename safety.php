@@ -75,6 +75,7 @@ function rethrowIfNot (Exception $e, $types) {
 class AssertException extends Exception {}
 class ShutdownException extends ErrorException {}
 class TimeLimitException extends Exception {}
+class MemoryLimitException extends Exception {}
 
 
 
@@ -87,12 +88,18 @@ function exception_error_handler ($errno, $errstr, $errfile, $errline) {
     report_exception($e);
 }
 
+// TODO: move this into optimizer
 function shutdown_time_limit () {
   $executionTime = microtime(true) - _safety_report_data::$_initTime;
   if ($executionTime > _safety_report_data::$_configuration['time_limit']) {
     $timeLimitException = new TimeLimitException("Execution time of $executionTime second(s) exceeds time limit of " . _safety_report_data::$_configuration['time_limit'] . " second(s)");
     $timeLimitException->digest = 'H8g94sqWn5dFmRoNIZF539r7';
     report_exception($timeLimitException);
+  }
+  if (isset(_safety_report_data::$_configuration['memory_limit']) && memory_get_peak_usage() > _safety_report_data::$_configuration['memory_limit']) {
+    $memoryLimitException = new MemoryLimitException("Current allocation of " . memory_get_peak_usage() . " bytes exceeds safe memory limit of " . _safety_report_data::$_configuration['memory_limit'] . " bytes");
+    $memoryLimitException->digest = 'EMfmGqToVpeRJnrRpoVkiuPb';
+    report_exception($memoryLimitException);
   }
 }
 
@@ -160,7 +167,7 @@ function report_exception ($e) {
     echo "</pre>";
   }
 
-  debugMode and debugMessage('report_exception(): ' . (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . ($e instanceof Exception ? get_class($e) : $e->{'class'}) . ": " . ($e instanceof Exception ? $e->getMessage() : $e->message));
+  debugMode and debugMessage((isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . ($e instanceof Exception ? get_class($e) : $e->{'class'}) . ": " . ($e instanceof Exception ? $e->getMessage() : $e->message));
 
 }
 
@@ -254,8 +261,12 @@ function generate_exception_report ($e) {
   foreach (safety_report_data() as $name => $value)
     $report->additional->$name = $value;
   
-  if (isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog']))
-    $report->debug = $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'];
+  if (isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'])) {
+    if (count($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog']) <= 200)
+      $report->debug = $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'];
+    else
+      $report->debug = array_merge(array_slice($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'], 0, 100), array('(debug log truncated)'), array_slice($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'], -100));
+  }
 
   return $report;
   
@@ -264,16 +275,26 @@ function generate_exception_report ($e) {
 
 
 function _send_exception_report ($report) {
-
+  debugMode and debugMessage('begin');
+  
   if (is_object($report) && ($report instanceof Exception || isset($report->__uLkwfIktHDm7mUUfbN0T2WTS_isException)))
     $report = generate_exception_report($report);
 
   if (_safety_report_data::$_configuration['report_url']) {
     $jsonReport = json_encode($report);
     if (strlen($jsonReport) > 60000) {
-      unset($report->exception->previous);
+      $report->exception->previous = '(report truncated)';
+      $jsonReport = json_encode($report);
+      //echo '<pre>';
+      //var_dump($report);
+      //echo '</pre>';
+      //exit;
+    }
+    if (strlen($jsonReport) > 60000 && count($report->debug) > 60) {
+      $report->debug = array_merge(array_slice($report->debug, 0, 30), array('(debug log truncated)'), array_slice($report->debug, -30));
       $jsonReport = json_encode($report);
     }
+    debugMode and debugMessage('safety report created - ' . strlen($jsonReport) . ' bytes long');
     $postData = 'data=' . urlencode($jsonReport);
 
     $curl = curl_init(rtrim(_safety_report_data::$_configuration['report_url'], '/') . '/report/');
@@ -283,13 +304,18 @@ function _send_exception_report ($report) {
     curl_setopt($curl, CURLOPT_HEADER, 0);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_TIMEOUT, 0);
-    curl_setopt($curl, CURLOPT_TIMEOUT_MS, 3000);
+    curl_setopt($curl, CURLOPT_TIMEOUT_MS, 10000);
 
+    debugMode and debugMessage('sending safety report to ' . _safety_report_data::$_configuration['report_url']);
     $response = curl_exec($curl);
+    
+    if ($response === false)
+      debugMode and debugMessage('error sending safety report: ' . curl_error($curl));
     // assertTrue($response !== false);
     
   }
 
+  debugMode and debugMessage('end');
 }
 
 function exception_to_stdclass ($exception) {
