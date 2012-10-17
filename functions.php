@@ -137,6 +137,26 @@ function array_merge_recursive_overwrite () {
   return $destination;
 }
 
+function recursive_merge () {
+  $args = func_get_args();
+  $destination = array_shift($args);
+  foreach ($args as $iterable) {
+    if (is_string($iterable) || is_int($iterable))
+      $destination = $iterable;
+    else
+      foreach ($iterable as $key => $value) {
+        if (is_object($destination))
+          $destination->$key = isset($destination->$key) && (is_object($value) || is_array($value)) ? recursive_merge($destination->$key, $value) : $value;
+        else if (is_array($destination))
+          $destination[$key] = isset($destination[$key]) && (is_object($value) || is_array($value)) ? recursive_merge($destination[$key], $value) : $value;
+        else
+          assertTrue(false);
+      }
+  }
+
+  return $destination;
+}
+
 function postToURL ($url, $postData, $timeout = 3000) {
   $curl = curl_init($url);
   curl_setopt($curl, CURLOPT_POST, 1);

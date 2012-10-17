@@ -160,7 +160,7 @@ function report_exception ($e) {
     _safety_report_data::$_reports = array();
   _safety_report_data::$_reports[] = $e;
   
-  if (_safety_report_data::$_configuration['display_errors'] && !($e instanceof TimeLimitException)) {
+  if (_safety_report_data::$_configuration['display_errors'] && !($e instanceof TimeLimitException) && !($e instanceof MemoryLimitException)) {
     echo "<pre>";
     echo (isset($e->caught) && $e->caught ? 'Caught' : 'Uncaught') . ' ' . ($e instanceof Exception ? get_class($e) : $e->{'class'}) . ": <br />";
     echo htmlspecialchars($e instanceof Exception ? $e : $e->stringOf);
@@ -311,6 +311,9 @@ function _send_exception_report ($report) {
     
     if ($response === false)
       debugMode and debugMessage('error sending safety report: ' . curl_error($curl));
+    else
+      debugMode and debugMessage('sending safety report response: ' . $response);
+      
     // assertTrue($response !== false);
     
   }

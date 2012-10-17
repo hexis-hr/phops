@@ -172,6 +172,7 @@ function debug_onShutdown ($callback) {
 function debug_instance_shutdown () {
   debug_onShutdown('P28dLKkZZPjKsQzjkIELGRpC');
   debugMessage("instance shutdown");
+  debugMessage("peak memory usage: " . memory_get_peak_usage() . ' bytes');
 }
 
 if (debugMode) {
