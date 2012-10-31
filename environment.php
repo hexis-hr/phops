@@ -24,7 +24,7 @@ if (!isset($_SERVER['baseUrl']) && isset($_SERVER['HTTP_HOST']))
   $_SERVER['baseUrl'] = 'http://' . $_SERVER['HTTP_HOST'];
 
 if (!isset($_SERVER['basePath']))
-  $_SERVER['basePath'] = dirname($_SERVER['SCRIPT_FILENAME']);
+  $_SERVER['basePath'] = realpath(dirname($_SERVER['SCRIPT_FILENAME']));
 
 if (!isset($_SERVER['robots']) || !$_SERVER['robots'])
   $_SERVER['robots'] = 'robots-deny.txt';

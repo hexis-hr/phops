@@ -26,6 +26,7 @@ require_once(dirname(__FILE__) . '/environment.php');
 require_once(dirname(__FILE__) . '/debug.php');
 require_once(dirname(__FILE__) . '/safety.php');
 require_once(dirname(__FILE__) . '/setup.php');
+require_once(dirname(__FILE__) . '/unit-test.php');
 
 chdir($_SERVER['basePath']);
 

@@ -73,6 +73,16 @@ function debugMessage ($message) {
 
 }
 
+function debugObject ($object) {
+  if (!isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugObjects']))
+    $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugObjects'] = (object) array();
+  $id = randomKey(24);
+  $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugObjects']->$id = $object;
+  if (isset($_SERVER['debugObjectsPath']))
+    file_put_contents($_SERVER['debugObjectsPath'] . "/$id.json", json_encode($object), FILE_APPEND | LOCK_EX);
+  return "[object: $id]";
+}
+
 function debugUntraceableMessage ($message) {
 
   $timestamp = microtime(true);
