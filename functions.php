@@ -55,6 +55,120 @@ function randomKey ($length) {
   return $random;
 }
 
+function uniqueId () {
+  return randomKey(24);
+}
+
+/**
+ * Allowed 21 characters: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f, g, j, m, s, u
+ * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = p = v, r is banned, s = z
+ */
+function userFriendyId_fromNumeric ($numericId) {
+  assertTrue(is_numeric($numericId) && floor($numericId) == $numericId);
+  $numericId = floor($numericId);
+  $userFriendyId = '';
+  static $map = array(
+    'h' => 'j',
+    'i' => 'm',
+    'j' => 's',
+    'k' => 'u',
+    /*
+    'd' => 'e',
+    'e' => 'f',
+    'f' => 'g',
+    'g' => 'j',
+    'h' => 'm',
+    'i' => 's',
+    'j' => 'u',
+    'k' => 'v',
+    /**/
+  );
+  foreach (str_split(base_convert($numericId, 10, 20)) as $char) {
+    $char = strtolower($char);
+    $userFriendyId .= isset($map[$char]) ? $map[$char] : $char;
+  }
+  $control = strtolower(substr(sha1($userFriendyId), 0, 1));
+  $control = (isset($map[$control]) ? $map[$control] : $control);
+  return strtolower($userFriendyId . $control);
+}
+
+/**
+ * Allowed 21 characters: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f, g, j, m, s, u
+ * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = p = v, r is banned, s = z
+ */
+function userFriendyId ($userFriendyId) {
+  static $map = array(
+    'o' => '0',
+    'i' => '1',
+    'l' => '1',
+    'p' => 'b',
+    't' => 'd',
+    'h' => 'g',
+    'k' => 'g',
+    'n' => 'm',
+    'p' => 'f',
+    'v' => 'f',
+    'z' => 's',
+  );
+  $userFriendyId = strtolower($userFriendyId);
+  $control = substr($userFriendyId, -1);
+  $control = isset($map[$control]) ? $map[$control] : $control;
+  $userFriendyId = substr($userFriendyId, 0, -1);
+  foreach (str_split($userFriendyId) as $index => $char)
+    $userFriendyId[$index] = isset($map[$char]) ? $map[$char] : $char;
+  assertTrue($control == strtolower(substr(sha1($userFriendyId), 0, 1)));
+  return strtolower($userFriendyId . $control);
+}
+
+function hamming_encodeNumber ($number) {
+  assertTrue(is_numeric($number) && floor($number) == $number);
+  $number = floor($number);
+  $binaryString = base_convert($number, 10, 2);
+  $result = hamming_encode(str_pad($binaryString, strlen($binaryString) + 4 - (strlen($binaryString) % 4), '0', STR_PAD_LEFT));
+  return base_convert($result, 2, 10);
+}
+
+function hamming_decodeNumber ($number) {
+  assertTrue(is_numeric($number) && floor($number) == $number);
+  $number = floor($number);
+  $binaryString = base_convert($number, 10, 2);
+  $result = hamming_decode(str_pad($binaryString, strlen($binaryString) + 7 - (strlen($binaryString) % 7), '0', STR_PAD_LEFT));
+  return base_convert($result, 2, 10);
+}
+
+function hamming_encode ($binary) {
+  assertTrue(strlen($binary) % 4 == 0);
+  assertTrue(preg_match('/^[01]*$/', $binary));
+  $result = '';
+  foreach (str_split($binary, 4) as $bits) {
+    $result .= ($bits[0] + $bits[1] + $bits[3]) % 2;
+    $result .= ($bits[0] + $bits[2] + $bits[3]) % 2;
+    $result .= $bits[0];
+    $result .= ($bits[1] + $bits[2] + $bits[3]) % 2;
+    $result .= $bits[1] . $bits[2] . $bits[3];
+  }
+  return $result;
+}
+
+function hamming_decode ($binary) {
+  assertTrue(strlen($binary) % 7 == 0);
+  assertTrue(preg_match('/^[01]*$/', $binary));
+  $result = '';
+  foreach (str_split($binary, 7) as $bits) {
+    $p1 = ($bits[0] + $bits[2] + $bits[4] + $bits[6]) % 2;
+    $p2 = ($bits[1] + $bits[2] + $bits[5] + $bits[6]) % 2;
+    $p3 = ($bits[3] + $bits[4] + $bits[5] + $bits[6]) % 2;
+    $brokenBit = base_convert("$p3$p2$p1", 2, 10);
+    if ($brokenBit != 0)
+      $bits[$brokenBit - 1] = ($bits[$brokenBit - 1] + 1) % 2;
+    assertTrue(($bits[0] + $bits[2] + $bits[4] + $bits[6]) % 2 == 0, "p1 is wrong");
+    assertTrue(($bits[1] + $bits[2] + $bits[5] + $bits[6]) % 2 == 0, "p2 is wrong");
+    assertTrue(($bits[3] + $bits[4] + $bits[5] + $bits[6]) % 2 == 0, "p3 is wrong");
+    $result .= $bits[2] . $bits[4] . $bits[5] . $bits[6];
+  }
+  return $result;
+}
+
 function base64url_encode($data) {
   return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }

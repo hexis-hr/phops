@@ -15,13 +15,13 @@ function runUnitTests () {
   echo 'Listing files ..';
   $files = array();
   //$_fc = 0;
-  foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($_SERVER['basePath'] . '/application')) as $file) {
+  foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($_SERVER['basePath'])) as $file) {
     if (microtime(true) > $timestamp + 1) {
       $timestamp = microtime(true);
       echo '.';
     }
     $isExcluded = false;
-    foreach (array_merge(array(__DIR__), (array) $_SERVER['unitTest_excludePath']) as $excludePath) {
+    foreach (array_merge(array(__DIR__), isset($_SERVER['unitTest_excludePath']) ? (array) $_SERVER['unitTest_excludePath'] : array()) as $excludePath) {
       //echo rtrim(str_replace(array('\\', '/'), array('/', '/'), $excludePath), '/') . "\n";
       //exit;
       if (substr(str_replace(array('\\', '/'), array('/', '/'), $file), 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $excludePath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $excludePath), '/') . '/')

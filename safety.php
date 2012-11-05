@@ -91,7 +91,7 @@ function exception_error_handler ($errno, $errstr, $errfile, $errline) {
 // TODO: move this into optimizer
 function shutdown_time_limit () {
   $executionTime = microtime(true) - _safety_report_data::$_initTime;
-  if ($executionTime > _safety_report_data::$_configuration['time_limit']) {
+  if (isset(_safety_report_data::$_configuration['time_limit']) && $executionTime > _safety_report_data::$_configuration['time_limit']) {
     $timeLimitException = new TimeLimitException("Execution time of $executionTime second(s) exceeds time limit of " . _safety_report_data::$_configuration['time_limit'] . " second(s)");
     $timeLimitException->digest = 'H8g94sqWn5dFmRoNIZF539r7';
     report_exception($timeLimitException);
