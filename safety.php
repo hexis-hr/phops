@@ -22,7 +22,7 @@ _safety_report_data::$_configuration = array(
   //'report_url' => 'http://ipv4.localhost/issues/report/',
   'report_url' => null,
   'display_errors' => true,
-  'mode' => 'transitional', // transitional or strict
+  'mode' => 'strict', // transitional or strict
   'error_reporting' => E_ALL | E_STRICT,
   /*
   'report_exception' => array(

@@ -72,24 +72,17 @@ function userFriendyId_fromNumeric ($numericId) {
     'i' => 'm',
     'j' => 's',
     'k' => 'u',
-    /*
-    'd' => 'e',
-    'e' => 'f',
-    'f' => 'g',
-    'g' => 'j',
-    'h' => 'm',
-    'i' => 's',
-    'j' => 'u',
-    'k' => 'v',
-    /**/
   );
-  foreach (str_split(base_convert($numericId, 10, 20)) as $char) {
+  foreach (str_split(base_convert($numericId, 10, 21)) as $char) {
     $char = strtolower($char);
     $userFriendyId .= isset($map[$char]) ? $map[$char] : $char;
   }
-  $control = strtolower(substr(sha1($userFriendyId), 0, 1));
-  $control = (isset($map[$control]) ? $map[$control] : $control);
-  return strtolower($userFriendyId . $control);
+  $control = strtolower(substr(sha1($userFriendyId), 0, 2));
+  foreach (str_split($control) as $char) {
+    $char = strtolower($char);
+    $userFriendyId .= isset($map[$char]) ? $map[$char] : $char;
+  }
+  return strtolower($userFriendyId);
 }
 
 /**
@@ -111,12 +104,13 @@ function userFriendyId ($userFriendyId) {
     'z' => 's',
   );
   $userFriendyId = strtolower($userFriendyId);
-  $control = substr($userFriendyId, -1);
-  $control = isset($map[$control]) ? $map[$control] : $control;
-  $userFriendyId = substr($userFriendyId, 0, -1);
+  $control = substr($userFriendyId, -2);
+  foreach (str_split($control) as $index => $char)
+    $control[$index] = isset($map[$char]) ? $map[$char] : $char;
+  $userFriendyId = substr($userFriendyId, 0, -2);
   foreach (str_split($userFriendyId) as $index => $char)
     $userFriendyId[$index] = isset($map[$char]) ? $map[$char] : $char;
-  assertTrue($control == strtolower(substr(sha1($userFriendyId), 0, 1)));
+  assertTrue($control == strtolower(substr(sha1($userFriendyId), 0, 2)));
   return strtolower($userFriendyId . $control);
 }
 
