@@ -61,7 +61,7 @@ function uniqueId () {
 
 /**
  * Allowed 21 characters: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f, g, j, m, s, u
- * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = p = v, r is banned, s = z
+ * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = v, r is banned, s = z
  */
 function userFriendyId_fromNumeric ($numericId) {
   assertTrue(is_numeric($numericId) && floor($numericId) == $numericId);
@@ -87,9 +87,10 @@ function userFriendyId_fromNumeric ($numericId) {
 
 /**
  * Allowed 21 characters: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f, g, j, m, s, u
- * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = p = v, r is banned, s = z
+ * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = v, r is banned, s = z
  */
 function userFriendyId ($userFriendyId) {
+  assertTrue(is_string($userFriendyId) && strlen($userFriendyId) >= 3);
   static $map = array(
     'o' => '0',
     'i' => '1',
@@ -99,7 +100,6 @@ function userFriendyId ($userFriendyId) {
     'h' => 'g',
     'k' => 'g',
     'n' => 'm',
-    'p' => 'f',
     'v' => 'f',
     'z' => 's',
   );
