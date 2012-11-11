@@ -105,6 +105,7 @@ function runUnitTests () {
   
   foreach ($tests as $test) {
     echo '  ' . (is_string($test) ? $test : $test[0] . '::' . $test[1]) . "()\n";
+    resetUnitTestEnvironment();
     call_user_func($test);
   }
   
@@ -112,11 +113,20 @@ function runUnitTests () {
   echo 'Done';
 }
 
+function resetUnitTestEnvironment () {
+  //if ($webBrowser = webBrowser(false))
+  //  $browser->redirect($_SERVER['baseUrl']);
+}
+
+//function webBrowser ($autoCreate = true) {
 function webBrowser () {
   static $browser;
   if (!isset($browser)) {
+    //if (!$autoCreate)
+    //  return;
     assertTrue(isset($_SERVER['unitTest_wdUrl']));
     $browser = new unitTest_webBrowser($_SERVER['unitTest_wdUrl']);
+    //$browser->redirect($_SERVER['baseUrl']);
     //$browser = new WebDriver($_SERVER['unitTest_wdUrl']);
     //$session = $webDriver->session('firefox');
     //assertTrue(isset($_SERVER['unitTest_wdSession']));
@@ -135,7 +145,7 @@ class unitTest_webContext {
     if (preg_match('/\/|\@|\:\:|\.\./', $query))
       $using = 'xpath';
     $results = $this->context->elements($using, $query);
-    assertTrue(count($results) > 0, 'no elements found');
+    //assertTrue(count($results) > 0, 'no elements found');
     $wrappedResults = new unitTest_elements();
     foreach ($results as $result)
       $wrappedResults[] = new unitTest_element($this->browser, $result);
@@ -149,7 +159,11 @@ class unitTest_webContext {
   }
 
   function unitTestElement ($id) {
-    return $this->queryOne("[unit-test-element=$id]");
+    $results = $this->query("[data-unit-test-element=$id]");
+    if (count($results) == 0)
+      $results = $this->query("[unit-test-element=$id]");
+    assertTrue(count($results) == 1, 'found ' . count($results) . ' results (1 expected)');
+    return $results[0];
   }
 
   function click () {
@@ -188,12 +202,37 @@ class unitTest_webBrowser extends unitTest_webContext {
   }
   
   function redirect ($url) {
+    if (strpos($url, '://') == false)
+      $url = $_SERVER['baseUrl'] . (substr($url, 0, 1) == '/' ? substr($url, 1) : $url);
     $this->context->open($url);
   }
   
 }
 
 class unitTest_elements extends \ArrayObject {
+  
+  function query ($query) {
+    $results = new unitTest_elements();
+    foreach ($this as $queryElement)
+      foreach ($queryElement->query($query) as $resultElement)
+        $results[] = $resultElement;
+    return $results;
+  }
+  
+  function __call ($name, $arguments) {
+    assertTrue(count($this) == 1);
+    return call_user_func_array(array($this[0], $name), $arguments);
+  }
+
+  function __set ($name, $value) {
+    assertTrue(count($this) == 1);
+    $this[0]->$name = $value;
+  }
+
+  function __get ($name) {
+    assertTrue(count($this) == 1);
+    return $this[0]->$name;
+  }
 
 }
 
@@ -221,6 +260,10 @@ class unitTest_element extends unitTest_webContext {
   
   function _set_value ($value) {
     $this->context->value(array('value' => str_split($value)));
+  }
+
+  function _get_value () {
+    return $this->context->attribute('value');
   }
   
   function select () {

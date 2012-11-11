@@ -55,4 +55,5 @@
 # $_SERVER['safety']['report_caught_exception'] = array("address@example.com");
 # $_SERVER['safety']['report_everything'] = array("address@example.com");
 
+# $_SERVER['unitTest_wdUrl'] = "http://localhost:4444/wd/hub";
 

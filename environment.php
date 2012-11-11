@@ -50,3 +50,5 @@ if (!isset($_SERVER['setupPath']) || !$_SERVER['setupPath'])
 if (!isset($_SERVER['remoteAddress']) || !$_SERVER['remoteAddress'])
   $_SERVER['remoteAddress'] = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null);
 
+if (!isset($_SERVER['unitTest_wdUrl']) || !$_SERVER['unitTest_wdUrl'])
+  $_SERVER['unitTest_wdUrl'] = "http://localhost:4444/wd/hub";
