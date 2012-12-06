@@ -8,7 +8,19 @@
 
 require_once(dirname(__FILE__) . '/externals/php-webdriver/__init__.php');
 
+class unitTestEnvironmentException extends Exception {}
+
 function runUnitTests () {
+  //assertTrue(isset($_SERVER['unitTest_result']), "Result file not set");
+  $result = (object) array(
+    'tests' => (object) array(
+      'count' => 0,
+      'all' => array(),
+      'successes' => array(),
+      'failures' => array(),
+      'errors' => array(),
+    ),
+  );
   //var_dump($_SERVER['basePath']);
   //exit;
   $timestamp = microtime(true);
@@ -94,23 +106,67 @@ function runUnitTests () {
         $timestamp = microtime(true);
         echo '.';
       }
-      if (substr(strtolower($method), 0, 8) == 'unittest' && !in_array("$class::$method", array('unitTest_webBrowser::unitTestElement', 'unitTest_element::unitTestElement', 'unitTest_webContext::unitTestElement')))
+      if (substr(strtolower($method), 0, 8) == 'unittest' && !in_array("$class::$method", array(
+        'unitTest_webBrowser::unitTestElement',
+        'unitTest_element::unitTestElement',
+        'unitTest_webContext::unitTestElement',
+        'unitTest_webBrowser::unitTestElements',
+        'unitTest_element::unitTestElements',
+        'unitTest_webContext::unitTestElements',
+      )))
         $tests[] = array($class, $method);
     }
   }
   
   echo ' ' . count($tests) . "\n";
   
-  echo "Running " . count($tests) . " tests:\n";
+  $result->tests->count = count($tests);
+  
+  echo "\nRunning " . count($tests) . " tests:\n";
   
   foreach ($tests as $test) {
-    echo '  ' . (is_string($test) ? $test : $test[0] . '::' . $test[1]) . "()\n";
+    $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+    echo '  ' . $id;
     resetUnitTestEnvironment();
-    call_user_func($test);
+    $result->tests->all[$id] = (object) array('status' => 'unknown');
+    try {
+      call_user_func($test);
+      echo ": success";
+      $result->tests->all[$id]->status = 'success';
+      $result->tests->successes[] = $id;
+    } catch (unitTestEnvironmentException $e) {
+      echo ": error";
+      $result->tests->all[$id]->status = 'error';
+      $result->tests->all[$id]->message = $e->getMessage();
+      $result->tests->all[$id]->trace = (string) $e;
+      $result->tests->errors[] = $id;
+    } catch (Exception $e) {
+      echo ": failure";
+      $result->tests->all[$id]->status = 'failure';
+      $result->tests->all[$id]->message = $e->getMessage();
+      $result->tests->all[$id]->trace = (string) $e;
+      $result->tests->failures[] = $id;
+    }
+    echo "\n";
   }
   
+  echo "\nResults: \n";
   
-  echo 'Done';
+  if (isset($_SERVER['unitTest_result']))
+    file_put_contents($_SERVER['unitTest_result'], json_encode($result) . "\n");
+  
+  echo "  Total:   " . $result->tests->count . "\n";
+  echo "  Success: " . count($result->tests->successes) . "\n";
+  echo "  Failure: " . count($result->tests->failures) . "\n";
+  echo "  Errors:  " . count($result->tests->errors) . "\n";
+  
+  if (count($result->tests->failures) + count($result->tests->errors) > 0)
+    echo "\nTests completed with failures or errors !\n\n";
+  else
+    echo "\nEverything completed successfully !\n\n";
+    
+  echo "Done\n";
+  
 }
 
 function resetUnitTestEnvironment () {
@@ -166,6 +222,14 @@ class unitTest_webContext {
     return $results[0];
   }
 
+  function unitTestElements ($id) {
+    $results = $this->query("[data-unit-test-element=$id]");
+    if (count($results) == 0)
+      $results = $this->query("[unit-test-element=$id]");
+    assertTrue(count($results) > 0, 'found ' . count($results) . ' results (more then 0 expected)');
+    return $results;
+  }
+
   function click () {
     $context = $this->context;
     $this->_ensureVisible(function () use ($context) {
@@ -191,19 +255,25 @@ class unitTest_webBrowser extends unitTest_webContext {
   private $driver;
   
   function __construct ($url) {
-    $this->driver = new WebDriver($url);
-    $this->context = $this->driver->session('firefox');
+    try {
+      $this->driver = new WebDriver($url);
+      $this->context = $this->driver->session('firefox');
+    } catch (WebDriverCurlException $e) {
+      throw new unitTestEnvironmentException("Could not open a browser session", 0, $e);
+    }
     $this->browser = $this;
   }
   
   function __destruct () {
-    //if (isset($this->context))
-    //  $this->context->close();
+    if (isset($this->context))
+      $this->context->close();
   }
   
   function redirect ($url) {
-    if (strpos($url, '://') == false)
+    if (strpos($url, '://') == false) {
+      assertTrue(isset($_SERVER['baseUrl']), "baseUrl not set", 'unitTestEnvironmentException');
       $url = $_SERVER['baseUrl'] . (substr($url, 0, 1) == '/' ? substr($url, 1) : $url);
+    }
     $this->context->open($url);
   }
   
@@ -233,6 +303,10 @@ class unitTest_elements extends \ArrayObject {
     assertTrue(count($this) == 1);
     return $this[0]->$name;
   }
+  
+  function any () {
+    return $this[0];
+  }
 
 }
 
@@ -259,7 +333,10 @@ class unitTest_element extends unitTest_webContext {
   }
   
   function _set_value ($value) {
-    $this->context->value(array('value' => str_split($value)));
+    $context = $this->context;
+    $this->_ensureVisible(function () use ($context, $value) {
+      $context->value(array('value' => str_split($value)));
+    });
   }
 
   function _get_value () {
@@ -281,16 +358,21 @@ class unitTest_element extends unitTest_webContext {
     $state = (object) array(
       'display' => $this->context->css('display'),
       'visibility' => $this->context->css('visibility'),
+      'hiddenInput' => $this->context->name() == 'input' && $this->context->attribute('type') == 'hidden',
     );
     $e = null;
     try {
       if ($state->display == 'none' || $state->visibility == 'hidden')
         $this->browser->execute('arguments[0].style.display = ""; arguments[0].style.visibility = "";', array($this));
+      if ($state->hiddenInput)
+        $this->browser->execute('arguments[0].type = "text";', array($this));
       $f();
     } catch (Exception $e) {}
     // finally {
     if ($state->display == 'none' || $state->visibility == 'hidden')
       $this->browser->execute('arguments[0].style.display = ' . json_encode($state->display) . '; arguments[0].style.visibility = ' . json_encode($state->visibility) . ';', array($this));
+     if ($state->hiddenInput)
+      $this->browser->execute('arguments[0].type = "hidden";', array($this));
     // }
     if (isset($e))
       throw $e;
