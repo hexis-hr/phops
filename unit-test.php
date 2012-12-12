@@ -9,6 +9,7 @@
 require_once(dirname(__FILE__) . '/externals/php-webdriver/__init__.php');
 
 class unitTestEnvironmentException extends Exception {}
+class unitTestRequiredException extends Exception {}
 
 function runUnitTests () {
   //assertTrue(isset($_SERVER['unitTest_result']), "Result file not set");
@@ -201,31 +202,41 @@ function runUnitTests () {
   
   echo "\nRunning " . count($tests) . " tests:\n";
   
-  foreach ($tests as $test) {
-    $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
-    echo '  ' . $id;
-    resetUnitTestEnvironment();
-    $result->tests->all[$id] = (object) array('status' => 'unknown');
-    try {
-      call_user_func($test);
-      echo ": success";
-      $result->tests->all[$id]->status = 'success';
-      $result->tests->successes[] = $id;
-    } catch (unitTestEnvironmentException $e) {
-      echo ": error";
-      $result->tests->all[$id]->status = 'error';
-      $result->tests->all[$id]->message = $e->getMessage();
-      $result->tests->all[$id]->trace = (string) $e;
-      $result->tests->errors[] = $id;
-    } catch (Exception $e) {
-      echo ": failure";
-      $result->tests->all[$id]->status = 'failure';
-      $result->tests->all[$id]->message = $e->getMessage();
-      $result->tests->all[$id]->trace = (string) $e;
-      $result->tests->failures[] = $id;
+  do {
+    $unhandledCount = count($tests);
+    foreach ($tests as $key => $test) {
+      $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+      echo '  ' . $id;
+      resetUnitTestEnvironment();
+      $result->tests->all[$id] = (object) array('status' => 'unknown');
+      try {
+        call_user_func($test);
+        echo ": success";
+        $result->tests->all[$id]->status = 'success';
+        $result->tests->successes[] = $id;
+        isUnitTestRun($test, true);
+      } catch (unitTestRequiredException $e) {
+        echo ": delayed";
+        $tests[] = $test;
+      } catch (unitTestEnvironmentException $e) {
+        echo ": error";
+        $result->tests->all[$id]->status = 'error';
+        $result->tests->all[$id]->message = $e->getMessage();
+        $result->tests->all[$id]->trace = (string) $e;
+        $result->tests->errors[] = $id;
+        isUnitTestRun($test, false);
+      } catch (Exception $e) {
+        echo ": failure";
+        $result->tests->all[$id]->status = 'failure';
+        $result->tests->all[$id]->message = $e->getMessage();
+        $result->tests->all[$id]->trace = (string) $e;
+        $result->tests->failures[] = $id;
+        isUnitTestRun($test, false);
+      }
+      unset($tests[$key]);
+      echo "\n";
     }
-    echo "\n";
-  }
+  } while (count($tests) > 0 && count($tests) < $unhandledCount);
   
   echo "\nResults: \n";
   
@@ -238,12 +249,27 @@ function runUnitTests () {
   echo "  Errors:  " . count($result->tests->errors) . "\n";
   
   if (count($result->tests->successes) != $result->tests->count)
-    echo "\nTests completed with failures or errors !\n\n";
+    echo "\nTests completed with failures, errors or skipped tests !\n\n";
   else
     echo "\nEverything completed successfully !\n\n";
     
   echo "Done\n";
   
+}
+
+function isUnitTestRun ($test, $set = null) {
+  static $runedTests = array();
+  $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+  if (isset($set))
+    $runedTests[$id] = $set;
+  return isset($runedTests[$id]) ? $runedTests[$id] : null;
+}
+
+function requireUnitTest () {
+  $test = func_get_args();
+  $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+  if (!isUnitTestRun($test))
+    throw new unitTestRequiredException("Unit test $id required");
 }
 
 function resetUnitTestEnvironment () {
