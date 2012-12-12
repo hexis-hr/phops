@@ -165,6 +165,7 @@ function runUnitTests () {
   echo ' ' . $i . "\n";
   
   $tests = array();
+  $setups = array();
   
   echo 'Listing tests ..';
   $functions = get_defined_functions();
@@ -172,6 +173,11 @@ function runUnitTests () {
     if (microtime(true) > $timestamp + 1) {
       $timestamp = microtime(true);
       echo '.';
+    }
+    if (substr(strtolower($function), 0, 13) == 'unittestsetup'
+      || substr(strtolower($function), 0, 14) == 'unittest_setup') {
+      $setups[] = $function;
+      continue;
     }
     if (substr(strtolower($function), 0, 8) == 'unittest')
       $tests[] = $function;
@@ -182,6 +188,11 @@ function runUnitTests () {
       if (microtime(true) > $timestamp + 1) {
         $timestamp = microtime(true);
         echo '.';
+      }
+      if (substr(strtolower($method), 0, 13) == 'unittestsetup'
+        || substr(strtolower($method), 0, 14) == 'unittest_setup') {
+        $setups[] = array($class, $method);
+        continue;
       }
       if (substr(strtolower($method), 0, 8) == 'unittest' && !in_array("$class::$method", array(
         'unitTest_webBrowser::unitTestElement',
@@ -199,32 +210,58 @@ function runUnitTests () {
   
   $result->tests->count = count($tests);
   
-  echo "\nRunning " . count($tests) . " tests:\n";
-  
-  foreach ($tests as $test) {
-    $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
-    echo '  ' . $id;
-    resetUnitTestEnvironment();
-    $result->tests->all[$id] = (object) array('status' => 'unknown');
-    try {
-      call_user_func($test);
+  echo "\nRunning " . count($setups) . " setups:\n";
+  $result->setup = (object) array('status' => 'unknown');
+  try {
+    foreach ($setups as $setup) {
+      $id = (is_string($setup) ? $setup : $setup[0] . '::' . $setup[1]) . '()';
+      echo '  ' . $id;
+      call_user_func($setup);
       echo ": success";
-      $result->tests->all[$id]->status = 'success';
-      $result->tests->successes[] = $id;
-    } catch (unitTestEnvironmentException $e) {
-      echo ": error";
-      $result->tests->all[$id]->status = 'error';
-      $result->tests->all[$id]->message = $e->getMessage();
-      $result->tests->all[$id]->trace = (string) $e;
-      $result->tests->errors[] = $id;
-    } catch (Exception $e) {
-      echo ": failure";
-      $result->tests->all[$id]->status = 'failure';
-      $result->tests->all[$id]->message = $e->getMessage();
-      $result->tests->all[$id]->trace = (string) $e;
-      $result->tests->failures[] = $id;
     }
-    echo "\n";
+    $result->setup->status = 'success';
+  } catch (unitTestEnvironmentException $e) {
+    echo ": error";
+    $result->setup->status = 'error';
+    $result->setup->message = $e->getMessage();
+    $result->setup->trace = (string) $e;
+  } catch (Exception $e) {
+    echo ": failure";
+    $result->setup->status = 'failure';
+    $result->setup->message = $e->getMessage();
+    $result->setup->trace = (string) $e;
+  }
+  echo "\n";
+
+  if ($result->setup->status == 'success') {
+    echo "\nRunning " . count($tests) . " tests:\n";
+    
+    foreach ($tests as $test) {
+      $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+      echo '  ' . $id;
+      resetUnitTestEnvironment();
+      $result->tests->all[$id] = (object) array('status' => 'unknown');
+      try {
+        call_user_func($test);
+        echo ": success";
+        $result->tests->all[$id]->status = 'success';
+        $result->tests->successes[] = $id;
+      } catch (unitTestEnvironmentException $e) {
+        echo ": error";
+        $result->tests->all[$id]->status = 'error';
+        $result->tests->all[$id]->message = $e->getMessage();
+        $result->tests->all[$id]->trace = (string) $e;
+        $result->tests->errors[] = $id;
+      } catch (Exception $e) {
+        echo ": failure";
+        $result->tests->all[$id]->status = 'failure';
+        $result->tests->all[$id]->message = $e->getMessage();
+        $result->tests->all[$id]->trace = (string) $e;
+        $result->tests->failures[] = $id;
+      }
+      echo "\n";
+    }
+  
   }
   
   echo "\nResults: \n";
@@ -232,6 +269,7 @@ function runUnitTests () {
   if (isset($_SERVER['unitTest_result']))
     file_put_contents($_SERVER['unitTest_result'], json_encode($result) . "\n");
   
+  echo "  Setup:   " . $result->setup->status . "\n";
   echo "  Total:   " . $result->tests->count . "\n";
   echo "  Success: " . count($result->tests->successes) . "\n";
   echo "  Failure: " . count($result->tests->failures) . "\n";
