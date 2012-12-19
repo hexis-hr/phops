@@ -457,7 +457,10 @@ class unitTest_element extends unitTest_webContext {
   
   function _set_value ($value) {
     $context = $this->context;
-    $this->_ensureVisible(function () use ($context, $value) {
+    $self = $this;
+    $browser = $this->browser;
+    $this->_ensureVisible(function () use ($self, $browser, $context, $value) {
+      $browser->execute('arguments[0].value = "";', array($self));
       $context->value(array('value' => str_split($value)));
     });
   }
@@ -565,6 +568,15 @@ class unitTest_attribute {
 
   function __construct ($value) {
     $this->value = $value;
+  }
+  
+  function __toString () {
+    try {
+      return $this->value;
+    } catch (Exception $e) {
+      // __toString is not allowed to throw an exception
+      return (string) $e;
+    }
   }
 
 }
