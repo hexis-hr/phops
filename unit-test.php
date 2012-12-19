@@ -329,7 +329,8 @@ class unitTest_webContext {
     $results = $this->query("[data-unit-test-element=$id]");
     if (count($results) == 0)
       $results = $this->query("[unit-test-element=$id]");
-    assertTrue(count($results) > 0, 'found ' . count($results) . ' results (more then 0 expected)');
+    //having empty list should not be an issue
+    //assertTrue(count($results) > 0, 'found ' . count($results) . ' results (more then 0 expected)');
     return $results;
   }
 
@@ -389,7 +390,11 @@ class unitTest_webBrowser extends unitTest_webContext {
     }
     $this->context->open($url);
   }
-  
+
+  function url () {
+    return $this->context->url();
+  }
+
 }
 
 class unitTest_elements extends \ArrayObject {
