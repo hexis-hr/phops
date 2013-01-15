@@ -372,7 +372,7 @@ class unitTest_webBrowser extends unitTest_webContext {
     try {
       $this->driver = new WebDriver($url);
       $this->context = $this->driver->session('firefox');
-    } catch (WebDriverCurlException $e) {
+    } catch (WebDriverException $e) {
       throw new unitTestEnvironmentException("Could not open a browser session", 0, $e);
     }
     $this->browser = $this;
