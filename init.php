@@ -19,9 +19,11 @@ $newIncludePaths = get_include_path();
 restore_include_path();
 set_include_path('.' . PATH_SEPARATOR . $newIncludePaths . PATH_SEPARATOR . get_include_path());
 
-
+// no code is run, only definitions
 require_once(dirname(__FILE__) . '/functions.php');
 require_once(dirname(__FILE__) . '/mail.php');
+
+// initialize
 require_once(dirname(__FILE__) . '/environment.php');
 require_once(dirname(__FILE__) . '/debug.php');
 require_once(dirname(__FILE__) . '/safety.php');

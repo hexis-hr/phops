@@ -55,3 +55,8 @@ if (strpos($_SERVER['remoteAddress'], ',') !== false)
 
 if (!isset($_SERVER['unitTest_wdUrl']) || !$_SERVER['unitTest_wdUrl'])
   $_SERVER['unitTest_wdUrl'] = "http://localhost:4444/wd/hub";
+
+
+define("version_assert", $_SERVER['environment'] != 'production');
+define("version_unittest", $_SERVER['environment'] == 'unittest');
+

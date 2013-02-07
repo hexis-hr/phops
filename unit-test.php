@@ -316,6 +316,20 @@ class unitTest_webContext {
     assertTrue(count($results) == 1, 'found ' . count($results) . ' results (1 expected)');
     return $results[0];
   }
+  
+  function waitForQuery ($query) {
+    $t = microtime(true);
+    // todo: is 30 seconds too much ? or not enough ? or wait in some different way ?
+    while (microtime(true) < $t + 30) {
+      $results = $this->query($query);
+      if (count($results) > 0)
+        return;
+      foreach ($results as $result)
+        return;
+      usleep(100000);
+    }
+    throw new Exception("Timeout waiting for query");
+  }
 
   function unitTestElement ($id) {
     $results = $this->query("[data-unit-test-element=$id]");
@@ -332,6 +346,10 @@ class unitTest_webContext {
     //having empty list should not be an issue
     //assertTrue(count($results) > 0, 'found ' . count($results) . ' results (more then 0 expected)');
     return $results;
+  }
+  
+  function waitForUnitTestElements ($id) {
+    $this->waitForQuery("[data-unit-test-element=$id], [unit-test-element=$id]");
   }
 
   function click () {
