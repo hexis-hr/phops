@@ -42,7 +42,9 @@ if ((!isset($_SERVER['debugPath']) || !$_SERVER['debugPath']) && isset($_SERVER[
   $_SERVER['debugPath'] = $_SERVER['dataPath'] . '/debug.log';
 
 if (!isset($_SERVER['librariesPath']) || !$_SERVER['librariesPath'])
-  $_SERVER['librariesPath'] = dirname(dirname(__FILE__));
+  $_SERVER['librariesPath'] = array();
+
+$_SERVER['librariesPath'][] = __DIR__;
 
 if (!isset($_SERVER['setupPath']) || !$_SERVER['setupPath'])
   $_SERVER['setupPath'] = $_SERVER['basePath'] . '/setup/auto-setup.php';
