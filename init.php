@@ -6,7 +6,6 @@
  *
  */
 
-
 // use UTC as default timezone if no timezone is set
 if (!ini_get("date.timezone"))
   ini_set("date.timezone", "UTC");
@@ -22,14 +21,18 @@ set_include_path('.' . PATH_SEPARATOR . $newIncludePaths . PATH_SEPARATOR . get_
 // no code is run, only definitions
 require_once(dirname(__FILE__) . '/functions.php');
 require_once(dirname(__FILE__) . '/mail.php');
+require_once(dirname(__FILE__) . '/safety.php');
+require_once(dirname(__FILE__) . '/context.php');
+//require_once(dirname(__FILE__) . '/index.php');
 
 // initialize
 require_once(dirname(__FILE__) . '/environment.php');
-require_once(dirname(__FILE__) . '/debug.php');
-require_once(dirname(__FILE__) . '/safety.php');
+require_once(dirname(__FILE__) . '/debug.php'); // depends on environment
 require_once(dirname(__FILE__) . '/setup.php');
 require_once(dirname(__FILE__) . '/unit-test.php');
 require_once(dirname(__FILE__) . '/activity.php');
+
+initialize_safety();
 
 chdir($_SERVER['basePath']);
 

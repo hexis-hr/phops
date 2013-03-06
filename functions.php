@@ -6,6 +6,54 @@
  *
  */
 
+function function_alias ($original, $alias) {
+  
+  $args = func_get_args();
+  assert('count($args) == 2', 'function_alias(): requires exactly two arguments');
+  assert('is_string($original) && is_string($alias)', 'function_alias(): requires string arguments');
+  
+  // valid function name - http://php.net/manual/en/functions.user-defined.php
+  assert('preg_match(\'/^[a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*$/\', $original) > 0',
+    "function_alias(): '$original' is not a valid function name");
+  assert('preg_match(\'/^[a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*$/\', $alias) > 0',
+    "function_alias(): '$alias' is not a valid function name");
+  
+  $aliasNamespace = substr($alias, 0, strrpos($alias, '\\') !== false ? strrpos($alias, '\\') : 0);
+  $aliasName = substr($alias, strrpos($alias, '\\') !== false ? strrpos($alias, '\\') + 1 : 0);
+  $serializedOriginal = var_export($original, true);
+  
+  eval("
+    namespace $aliasNamespace {
+      function $aliasName () {
+        return call_user_func_array($serializedOriginal, func_get_args());
+      }
+    }
+  ");
+  
+}
+
+function import_namespace ($source, $destination) {
+
+  $args = func_get_args();
+  assert('count($args) == 2', 'import_namespace(): requires exactly two arguments');
+  assert('is_string($source) && is_string($destination)', 'import_namespace(): requires string arguments');
+  
+  // valid function name - http://php.net/manual/en/functions.user-defined.php
+  assert('preg_match(\'/^([a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*)?$/\', $source) > 0',
+    "import_namespace(): '$destination' is not a valid namespace name");
+  assert('preg_match(\'/^([a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*)?$/\', $destination) > 0',
+    "import_namespace(): '$source' is not a valid namespace name");
+
+  foreach(get_declared_classes() as $class)
+    if (strpos($class, $source . '\\') === 0)
+      class_alias($class, $destination . ($destination ? '\\' : '') . substr($class, strlen($source . '\\')));
+
+  $functions = get_defined_functions();
+  foreach(array_merge($functions['internal'], $functions['user']) as $function)
+    if (strpos($function, $source . '\\') === 0)
+      function_alias($function, $destination . ($destination ? '\\' : '') . substr($function, strlen($source . '\\')));
+}
+
 function uuid () {
   return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
     // 32 bits for "time_low"
@@ -207,6 +255,10 @@ function jsonEncode ($value, $options = 0) {
 }
   /**/
 
+function is_integerValue ($value) {
+  return !is_object($value) && !is_array($value) && floor($value) == $value;
+}
+
 function firstElement ($array) {
   foreach ($array as $element)
     return $element;
@@ -228,6 +280,20 @@ function issetBit ($string, $offset) {
   if (strlen($string) * 8 - 1 < $offset)
     return false;
   return ord($string[floor($offset / 8)]) & pow(2, 7 - $offset % 8) ? true : false;
+}
+
+function keys ($subject) {
+  $keys = array();
+  foreach ($subject as $key => $value)
+    $keys[] = $key;
+  return $keys;
+}
+
+function values ($subject) {
+  $values = array();
+  foreach ($subject as $key => $value)
+    $values[] = $value;
+  return $values;
 }
 
 function array_merge_recursive_overwrite () {
@@ -263,6 +329,61 @@ function recursive_merge () {
   }
 
   return $destination;
+}
+
+function flatten ($subject, $delimiter = '_') {
+  assertTrue(is_array($subject) || is_object($subject));
+  $result = is_array($subject) ? array() : (object) array();
+  _flatten($result, $subject, $delimiter);
+  return $result;
+}
+
+function _flatten (&$result, $subject, $delimiter = '_', $prefix = '') {
+  assertTrue(is_array($result) || is_object($result));
+  assertTrue(is_array($subject) || is_object($subject));
+  foreach ($subject as $key => $value) {
+    if (is_array($value) || is_object($value))
+      _flatten($result, $value, $delimiter, $prefix . ($prefix ? $delimiter : '') . $key);
+    else
+      if (is_array($result))
+        $result[$prefix . ($prefix ? $delimiter : '') . $key] = $value;
+      else
+        $result->{$prefix . ($prefix ? $delimiter : '') . $key} = $value;
+  }
+}
+
+function unflatten ($subject, $delimiter = '_') {
+  assertTrue(is_array($subject) || is_object($subject));
+  $result = is_array($subject) ? array() : (object) array();
+  foreach ($subject as $key => $value)
+    _unflatten($result, $key, $value, $delimiter);
+  return $result;
+}
+
+function _unflatten (&$result, $key, $value, $delimiter = '_') {
+  $stack = array(&$result);
+  $keyParts = explode($delimiter, $key);
+  if (count($keyParts) > 1) {
+    foreach (array_slice($keyParts, 0, -1) as $keyPart) {
+      if (is_array($result)) {
+        if (!isset($stack[0][$keyPart]))
+          $stack[0][$keyPart] = array();
+        array_unshift($stack, null);
+        $stack[0] = &$stack[1][$keyPart];
+      } else {
+        if (!isset($stack[0]->$keyPart))
+          $stack[0]->$keyPart = (object) array();
+        array_unshift($stack, null);
+        $stack[0] = &$stack[1]->$keyPart;
+      }
+    }
+  }
+  
+  if (is_array($result))
+    $stack[0][end($keyParts)] = $value;
+  else
+    $stack[0]->{end($keyParts)} = $value;
+
 }
 
 function postToURL ($url, $postData, $timeout = 3000) {

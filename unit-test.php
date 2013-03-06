@@ -8,8 +8,8 @@
 
 require_once(dirname(__FILE__) . '/externals/php-webdriver/__init__.php');
 
-class unitTestEnvironmentException extends Exception {}
-class unitTestRequiredException extends Exception {}
+class unitTestEnvironmentException extends safeException {}
+class unitTestRequiredException extends safeException {}
 
 function runUnitTests () {
   //assertTrue(isset($_SERVER['unitTest_result']), "Result file not set");
@@ -415,7 +415,7 @@ class unitTest_webBrowser extends unitTest_webContext {
 
 }
 
-class unitTest_elements extends \ArrayObject {
+class unitTest_elements extends ArrayObject {
   
   function query ($query) {
     $results = new unitTest_elements();
