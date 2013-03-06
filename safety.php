@@ -221,11 +221,12 @@ function exception_to_stdclass ($exception) {
   $rawException->file = str_replace(array('\\', '/'), array('/', '/'), $exception->getFile());
   $rawException->line = $exception->getLine();
   $rawException->isLibrary = false;
-  foreach ($_SERVER['librariesPath'] as $libraryPath)
+  foreach ($_SERVER['librariesPath'] as $libraryPath) {
     $libraryPath = realpath($libraryPath);
     assertTrue($libraryPath !== false);
     if (substr($rawException->file, 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')
       $rawException->isLibrary = true;
+  }
   if (is_file($rawException->file))
     $rawException->snippet = extract_code_snippet($rawException->file, $rawException->line);
   if (isset($exception->types))
@@ -258,9 +259,12 @@ function exception_to_stdclass ($exception) {
 
     $traceItem->isLibrary = false;
     if (isset($traceItem->file))
-      foreach ($_SERVER['librariesPath'] as $libraryPath)
+      foreach ($_SERVER['librariesPath'] as $libraryPath) {
+        $libraryPath = realpath($libraryPath);
+        assertTrue($libraryPath !== false);
         if (substr($traceItem->file, 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')
           $traceItem->isLibrary = true;
+      }
     
     if (isset($traceItem->file, $traceItem->line) && is_file($traceItem->file))
       $traceItem->snippet = extract_code_snippet($traceItem->file, $traceItem->line);
