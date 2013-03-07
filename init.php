@@ -23,7 +23,7 @@ require_once(dirname(__FILE__) . '/functions.php');
 require_once(dirname(__FILE__) . '/mail.php');
 require_once(dirname(__FILE__) . '/safety.php');
 require_once(dirname(__FILE__) . '/context.php');
-//require_once(dirname(__FILE__) . '/index.php');
+require_once(dirname(__FILE__) . '/index.php');
 
 // initialize
 require_once(dirname(__FILE__) . '/environment.php');
