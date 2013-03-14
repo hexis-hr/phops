@@ -100,12 +100,7 @@ function shutdown_error_handler () {
 }
 
 function uncaught_exception_handler ($e) {
-  //echo "TODO: write a nce exception render";
-  //echo $e;
-  //var_dump(generate_exception_report($e));
-  //echo "<pre>$e</pre>";
   echo render_exception($e);
-  //echo generate_html_report(generate_exception_report($e));
   exit;
 }
 
@@ -145,7 +140,8 @@ function generate_exception_report ($e) {
   if (isset($_SERVER['REQUEST_METHOD']))
     $report->request->method = strtolower($_SERVER['REQUEST_METHOD']);
   if (isset($_SERVER['HTTP_HOST']) && isset($_SERVER['REQUEST_URI']))
-    $report->request->url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 'https' : 'http') . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
+    $report->request->url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 'https' : 'http')
+      . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
   if (isset($_SERVER['HTTP_REFERER']))
     $report->request->referer = $_SERVER['HTTP_REFERER'];
   if (isset($_SERVER['requestId']))
@@ -160,7 +156,6 @@ function generate_exception_report ($e) {
   
   $code = $report->exception;
   foreach (array_merge(array($report->exception), $report->exception->trace) as $traceItem) {
-    //$withinBasePath = isset($baseCodePath, $traceItem->file) && substr($traceItem->file, 0, strlen($baseCodePath)) == $baseCodePath;
     if (!$traceItem->isLibrary) {
       $code = $traceItem;
       break;
@@ -224,7 +219,8 @@ function exception_to_stdclass ($exception) {
   foreach ($_SERVER['librariesPath'] as $libraryPath) {
     $libraryPath = realpath($libraryPath);
     assertTrue($libraryPath !== false);
-    if (substr($rawException->file, 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')
+    $cleanPath = rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/');
+    if (substr($rawException->file, 0, strlen($cleanPath . '/')) == $cleanPath . '/')
       $rawException->isLibrary = true;
   }
   if (is_file($rawException->file))
@@ -262,7 +258,8 @@ function exception_to_stdclass ($exception) {
       foreach ($_SERVER['librariesPath'] as $libraryPath) {
         $libraryPath = realpath($libraryPath);
         assertTrue($libraryPath !== false);
-        if (substr($traceItem->file, 0, strlen(rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')) == rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/') . '/')
+        $cleanPath = rtrim(str_replace(array('\\', '/'), array('/', '/'), $libraryPath), '/');
+        if (substr($traceItem->file, 0, strlen($cleanPath . '/')) == $cleanPath . '/')
           $traceItem->isLibrary = true;
       }
     
@@ -291,9 +288,6 @@ function extract_code_snippet ($file, $line) {
 
 function generate_html_report ($report) {
 
-  //if (isset($report->code->basePath) && substr($report->code->file, 0, strlen($report->code->basePath)) == dirname($report->code->basePath))
-  //  $relativeFile = ltrim(substr($report->code->file, strlen($report->code->basePath), '/'));
-
   ob_start();
   
   echo '<div>';
@@ -316,7 +310,6 @@ function generate_html_report ($report) {
       . $report->request->url . "\r\n";
   if (isset($report->request->referer))
     echo "URL Referer: " . $report->request->referer . "\r\n";
-  //echo "Code location: " . (isset($relativeFile) ? $relativeFile : $report->code->file) . ':' . $report->exception->line . "\r\n";
   if (isset($report->request->id) || isset($report->request->session))
     echo (isset($report->request->id) ? "Request" : '')
       . (isset($report->request->id) && isset($report->request->session) ? '/' : '')
@@ -342,35 +335,27 @@ function generate_html_report ($report) {
   
   echo "<h1>Trace</h1>";
   echo "<ul>";
-  //echo $report->code->basePath;
   $firstItem = true;
   foreach (array_merge(array($report->exception), $report->exception->trace) as $traceItem) {
     $isLibrary = isset($traceItem->isLibrary) && $traceItem->isLibrary;
-    //$withinBasePath = isset($report->code) && isset($report->code->basePath) && isset($traceItem->file) && substr($traceItem->file, 0, strlen($report->code->basePath)) == $report->code->basePath;
-    //echo '<li class="' . ($withinBasePath ? '' : 'outside-base-path extra-information') . '">';
     echo '<li class="' . (!$isLibrary ? '' : 'outside-base-path extra-information') . '">';
-      //$file = isset($report->code) && isset($report->code->basePath) && substr($traceItem->file, 0, strlen($report->code->basePath)) == $report->code->basePath ? ltrim(substr($traceItem->file, strlen($report->code->basePath)), '/') : $traceItem->file;
     $traceItemId = randomKey(24);
-    echo '<a href="#' . $traceItemId . '" onclick="jQuery(\'.' . $traceItemId . '\').toggle(); return false;">' . (isset($traceItem->file) ? htmlspecialchars($traceItem->file . ':' . $traceItem->line) : '[internal function]') . '</a>';
-    //echo '<div class="' . $traceItemId . '" style="' . ($withinBasePath && $firstItem ? '' : 'display: none;') . '">';
+    echo '<a href="#' . $traceItemId . '" onclick="jQuery(\'.' . $traceItemId . '\').toggle(); return false;">'
+      . (isset($traceItem->file) ? htmlspecialchars($traceItem->file . ':' . $traceItem->line) : '[internal function]')
+      . '</a>';
     echo '<div class="' . $traceItemId . '" style="' . (!$isLibrary && $firstItem ? '' : 'display: none;') . '">';
     
     echo "<pre><h2>";
     ob_start();
-    //var_dump($traceItem);
     if (isset($traceItem->{'function'})) {
-      echo (isset($traceItem->{'class'}) ? $traceItem->{'class'} . $traceItem->{'type'} : '') . $traceItem->{'function'} . '(';
+      echo (isset($traceItem->{'class'}) ? $traceItem->{'class'} . $traceItem->{'type'} : '')
+        . $traceItem->{'function'} . '(';
       $arguments = array();
       foreach ($traceItem->arguments as $argument) {
         $arguments[] = dumpArgument($argument);
-        //echo 
-        //var_dump($argument);
-        //if (isset($argument->value))
-        //var_dump($argument->value);
       }
       echo implode(', ', $arguments);
       echo ')';
-      //echo "\r\n";
     }
     echo htmlspecialchars(ob_get_clean());
     echo "</h2></pre>";
@@ -379,27 +364,17 @@ function generate_html_report ($report) {
       echo '<pre class="snippet">';
       $content = htmlspecialchars($traceItem->snippet->content);
       $lines = explode("\n", $content);
-      $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] = "<strong>" . $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] . "</strong>\r";
+      $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] = "<strong>"
+        . $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] . "</strong>\r";
       echo implode("\n", $lines);
-      //ob_start();
-      //echo $traceItem->snippet->content;
-      //var_dump($traceItem);
-      //var_dump($traceItem);
-      //echo $traceItem->{"function"};
-      //echo htmlspecialchars(ob_get_clean());
       echo "</pre>";
     }
     echo '</div>';
     echo "</li>";
-    //var_dump(gettype($traceItem));
-    //echo $traceItem->file . "<br />";
-    
-    //if ($withinBasePath && $firstItem)
-    //  $problemTraceItem = $traceItem;
+
     if (!$isLibrary && $firstItem)
       $problemTraceItem = $traceItem;
     
-    //if ($withinBasePath)
     if (!$isLibrary)
       $firstItem = false;
   }
@@ -413,33 +388,20 @@ function generate_html_report ($report) {
       if (is_string($debugEntry)) {
         echo $debugEntry;
       } else {
-        echo "<div" . (isset($problemTraceItem, $problemTraceItem->file, $debugEntry->file) && $problemTraceItem->file == $debugEntry->file ? ' style="color: red;" ' : '') . ">";
-        echo "[" . date("Y-m-d H:i:s", $debugEntry->time) . "." . substr(round($debugEntry->time - floor($debugEntry->time), 6), 2) . "]" . (isset($debugEntry->file) ? " ({$debugEntry->file}:{$debugEntry->line})" : '') . (isset($debugEntry->type) ? " {$debugEntry->type}" : '') . "<br />" .
-          "  " . (isset($debugEntry->call) ? htmlentities($debugEntry->call) . ': ' : '') . htmlentities($debugEntry->message) . "\n";
+        echo "<div" . (isset($problemTraceItem, $problemTraceItem->file, $debugEntry->file)
+          && $problemTraceItem->file == $debugEntry->file ? ' style="color: red;" ' : '') . ">";
+        echo "[" . date("Y-m-d H:i:s", $debugEntry->time) . "."
+          . substr(round($debugEntry->time - floor($debugEntry->time), 6), 2) . "]"
+          . (isset($debugEntry->file) ? " ({$debugEntry->file}:{$debugEntry->line})" : '')
+          . (isset($debugEntry->type) ? " {$debugEntry->type}" : '') . "<br />" .
+          "  " . (isset($debugEntry->call) ? htmlentities($debugEntry->call) . ': ' : '')
+          . htmlentities($debugEntry->message) . "\n";
         echo "</div>";
       }
       echo "</li>";
     }
     echo '</ul>';
   }
-  
-  //var_dump($report->code->basePath);
-  /*
-  echo "<h1>Code snippet</h1>";
-  echo "<pre>";
-  ob_start();
-  echo "{$report->code->file}\r\n\r\n";
-  echo $report->code->snippet->content . "\r\n";
-  echo htmlspecialchars(ob_get_clean());
-  echo "</pre>";
-
-  echo "<h1>Exception stack</h1>";
-  echo "<pre>";
-  ob_start();
-  print_r($report->exception);
-  echo htmlspecialchars(ob_get_clean());
-  echo "</pre>";
-  /**/
   
   echo "<h1>GET</h1>";
   echo "<pre>";
@@ -539,26 +501,24 @@ function render_exception ($e) {
   $exceptions = array();
   while (true) {
 
-    /*
-    if (isset($e->next) && is_a($e->next->{'class'}, 'phpError', true) && is_a($e->{'class'}, 'ErrorException', true)) {
-      if (isset($e->previous)) {
-        $e = $e->previous;
-        continue;
-      }
-      break;
-    }
-    /**/
-  
     ob_start();
 
-    echo "<h1 style='font-size: 1.2em;'>{$e->{'class'}}: {$e->message}</h1>";
+    echo "<h1 style='font-size: 1.2em;' data-message='{$e->{'class'}}: ". htmlspecialchars($e->message, ENT_QUOTES)
+      . "'>{$e->{'class'}}: " .
+      (strlen($e->message) > 50 ? htmlspecialchars(substr($e->message, 0, 50), ENT_QUOTES) .
+      ' <a href="#" onclick="this.parentNode.textContent = this.parentNode.getAttribute(\'data-message\');' .
+      'return false;">...</a>' : htmlspecialchars($e->message, ENT_QUOTES)) . "</h1>";
     echo "<ul>";
     $firstItem = true;
     foreach (array_merge(array($e), $e->trace) as $traceItem) {
       $traceItemId = randomKey(24);
       $isLibrary = isset($traceItem->isLibrary) && $traceItem->isLibrary;
       echo '<li style="' . ($isLibrary ? 'color: gray;' : '') . '">';
-      echo '<a href="#' . $traceItemId . '" style="' . (!$isLibrary ? 'color: black;' : 'color: gray;') . '" onclick="if (this.nextSibling.style.display == \'none\') this.nextSibling.style.display = \'\'; else this.nextSibling.style.display = \'none\'; return false;">' . (isset($traceItem->file) ? htmlspecialchars($traceItem->file . ':' . $traceItem->line) : '[internal function]') . '</a>';
+      echo '<a href="#' . $traceItemId . '" style="' . (!$isLibrary ? 'color: black;' : 'color: gray;')
+        . '" onclick="if (this.nextSibling.style.display == \'none\') this.nextSibling.style.display = \'\';'
+        . ' else this.nextSibling.style.display = \'none\'; return false;">'
+        . (isset($traceItem->file) ? htmlspecialchars($traceItem->file . ':' . $traceItem->line)
+        : '[internal function]') . '</a>';
       echo '<div class="' . $traceItemId . '" style="' . (!$isLibrary && $firstItem ? '' : 'display: none;') . '">';
       
       echo "<pre><h2 style='font-size: 1.1em;'>";
@@ -590,15 +550,10 @@ function render_exception ($e) {
       }
       echo '</div>';
       echo "</li>";
-      //var_dump(gettype($traceItem));
-      //echo $traceItem->file . "<br />";
-      
-      //if ($withinBasePath && $firstItem)
-      //  $problemTraceItem = $traceItem;
+
       if (!$isLibrary && $firstItem)
         $problemTraceItem = $traceItem;
       
-      //if ($withinBasePath)
       if (!$isLibrary)
         $firstItem = false;
     }
@@ -631,19 +586,13 @@ function dumpArgument ($argument) {
   if (strtolower($argument->type) == 'string')
     return 'string(' . var_export((string) $argument->value, true) . ')';
 
-
   $return = '';
   if (isset($argument->type))
     $return .= $argument->type;
   if (isset($argument->length))
     $return .= '(' . $argument->length . ')';
-  if (isset($argument->value)) {
+  if (isset($argument->value))
     $return .= ' ' . var_export($argument->value, true);
-    
-    //if (is_string($argument->value))
-    //  $return .= ' "' . $argument->value . '"';
-    //else
-    //  $return .= ' "' . $argument->value . '"';
-  }
+
   return $return;
 }

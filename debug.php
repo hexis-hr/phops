@@ -83,6 +83,17 @@ function debugObject ($object) {
   return "[object: $id]";
 }
 
+function debugDump ($symbol) {
+  if ($symbol === null)
+    return 'null';
+  if (in_array(gettype($symbol), array('string', 'integer')))
+    return json_encode($symbol);
+  if (is_object($symbol))
+    return get_class($symbol) . ' {}';
+  assertTrue(false, gettype($symbol));
+}
+
+
 function debugUntraceableMessage ($message) {
 
   $timestamp = microtime(true);
