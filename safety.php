@@ -254,7 +254,9 @@ function exception_to_stdclass ($exception) {
       $traceItem->file = str_replace(array('\\', '/'), array('/', '/'), $traceItem->file);
 
     $traceItem->isLibrary = false;
-    if (isset($traceItem->file))
+    if (!isset($traceItem->file))
+      $traceItem->isLibrary = true;
+    else
       foreach ($_SERVER['librariesPath'] as $libraryPath) {
         $libraryPath = realpath($libraryPath);
         assertTrue($libraryPath !== false);
