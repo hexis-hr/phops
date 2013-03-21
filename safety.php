@@ -100,7 +100,11 @@ function shutdown_error_handler () {
 }
 
 function uncaught_exception_handler ($e) {
-  echo render_exception($e);
+  // todo: nice cli exception render
+  if (php_sapi_name() == "cli")
+    echo $e;
+  else
+    echo render_exception($e);
   exit;
 }
 

@@ -143,6 +143,14 @@ function runUnitTests () {
   echo 'Including files ..';
   //while (count($files) > 0) {
   $i = 0;
+  
+  // php include can overwrite variable values so we need to isolate include in a function
+  $includeFile = function ($file) {
+    ob_start();
+    include_once (string) $file;
+    ob_end_clean();
+  };
+  
   foreach ($files as $file) {
     if (microtime(true) > $timestamp + 1) {
       $timestamp = microtime(true);
@@ -159,9 +167,7 @@ function runUnitTests () {
     if (in_array(realpath($file), get_included_files()))
       continue;
     $i++;
-    ob_start();
-    include_once (string) $file;
-    ob_end_clean();
+    $includeFile($file);
   }
   echo ' ' . $i . "\n";
   
