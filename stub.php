@@ -86,7 +86,7 @@ function generateStubs ($destinationDirectory) {
   foreach ($callables as $callable) {
     $id = (is_string($callable) ? $callable : $callable[0] . '::' . $callable[1]) . '()';
     echo '  ' . $id;
-    $stubs = $callable();
+    $stubs = call_user_func($callable);
     foreach (is_array($stubs) ? $stubs : array($stubs) as $stub) {
       if (isset($stub->{'class'})) {
         if (!isset($stubsTree->{$stub->{'class'}}))
