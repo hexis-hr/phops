@@ -121,8 +121,14 @@ function generateStub (&$stubsTree, $stubData) {
 
   if (isset($stubData->{'class'})) {
     $stub = generateSymbolStub($stubsTree, $stubData->{'class'});
+    
     if (isset($stubData->storageClass) && is_string($stubData->storageClass))
       $stubData->storageClass = explode(' ', $stubData->storageClass);
+
+    if (isset($stubData->doc))
+      foreach (parseStubDoc($stubData->doc) as $k => $v)
+        $stubData->$k = $v;
+    
     if (isset($stubData->method)) {
       $stubData->name = $stubData->method;
       $stubData->symbolType = 'method';
@@ -135,8 +141,10 @@ function generateStub (&$stubsTree, $stubData) {
       if (isset($stubData->type))
         generateSymbolStub($stubsTree, $stubData->type);
       $stub->members->{'property_' . $stubData->property} = $stubData;
-    } else
+    } else {
       assertTrue(false);
+    }
+      
   }
   
 }
@@ -158,6 +166,12 @@ function generateSymbolStub (&$stubsTree, $symbol) {
       version_assert and assertTrue(!isset($stub->members->{'method_' . $method->name}));
       
       $protection = null;
+      $return = null;
+      $autocomplete = null;
+      $arguments = array();
+      $storageClass = array();
+      $comment = null;
+
       if ($method->isPublic())
         $protection = 'public';
       if ($method->isProtected())
@@ -165,7 +179,6 @@ function generateSymbolStub (&$stubsTree, $symbol) {
       if ($method->isPrivate())
         $protection = 'private';
       
-      $storageClass = array();
       if ($method->isFinal())
         $storageClass[] = 'final';
       if ($method->isAbstract())
@@ -173,31 +186,21 @@ function generateSymbolStub (&$stubsTree, $symbol) {
       if ($method->isStatic())
         $storageClass[] = 'static';
       
+      if (strpos($method->name, 'stub') === 0 && in_array('final', $storageClass) && in_array('static', $storageClass))
+        $autocomplete = 'invisible';
+
       $doc = $method->getDocComment();
       if ($doc === false)
         $doc = null;
       
-      $return = null;
-      if (isset($doc) && preg_match('/(?i)\@return\s+(\S+)/', $doc, $match)) {
-        $return = $match[1];
-        $doc = preg_replace('/(?i)\@return\s+(\S+)/', '', $doc);
+      if (isset($doc)) {
+        $comment = preg_replace('/^\s*\/\*\*/', '', $comment);
+        $comment = preg_replace('/\*\/\s*$/', '', $comment);
+        $comment = preg_replace('/\@\S+/', '', $comment);
+        foreach (parseStubDoc($doc) as $k => $v)
+          $$k = $v;
       }
 
-      if (isset($doc) && preg_match('/(?i)\@protection\s+(\S+)/', $doc, $match)) {
-        $protection = $match[1];
-        $doc = preg_replace('/(?i)\@protection\s+(\S+)/', '', $doc);
-      }
-
-      $autocomplete = null;
-      if (strpos($method->name, 'stub') === 0 && in_array('final', $storageClass) && in_array('static', $storageClass))
-        $autocomplete = 'invisible';
-
-      if (isset($doc) && preg_match('/(?i)\@autocomplete\s+(\S+)/', $doc, $match)) {
-        $autocomplete = $match[1];
-        $doc = preg_replace('/(?i)\@autocomplete\s+(\S+)/', '', $doc);
-      }
-      
-      $arguments = array();
       foreach ($method->getParameters() as $argument)
         $arguments[] = '$' . $argument->getName()
           . ($argument->isDefaultValueAvailable() ? ' = ' . var_export($argument->getDefaultValue(), true) : '');
@@ -206,6 +209,7 @@ function generateSymbolStub (&$stubsTree, $symbol) {
         'name' => $method->name,
         'arguments' => $arguments,
         'symbolType' => 'method',
+        'comment' => $comment,
         'doc' => $doc,
         'autocomplete' => isset($autocomplete) ? $autocomplete : null,
         'protection' => $protection,
@@ -219,22 +223,38 @@ function generateSymbolStub (&$stubsTree, $symbol) {
   return $stubsTree->{'class_' . $symbol};
 }
 
+function parseStubDoc ($doc) {
+  $stub = (object) array();
+
+  if (preg_match('/(?i)\@return\s+(\S+)/', $doc, $match)) {
+    $stub->{'return'} = $match[1];
+    $doc = preg_replace('/(?i)\@return\s+(\S+)/', '', $doc);
+  }
+
+  if (preg_match('/(?i)\@protection\s+(\S+)/', $doc, $match)) {
+    $stub->protection = $match[1];
+    $doc = preg_replace('/(?i)\@protection\s+(\S+)/', '', $doc);
+  }
+
+  if (preg_match('/(?i)\@autocomplete\s+(\S+)/', $doc, $match)) {
+    $stub->autocomplete = $match[1];
+    $doc = preg_replace('/(?i)\@autocomplete\s+(\S+)/', '', $doc);
+  }
+  
+  $stub->doc = $doc;
+  
+  return $stub;
+}
+
 function generateStubString ($stub) {
 
   $classString = "{";
   foreach ($stub->members as $member) {
     
     $generatedDoc = '';
-    if (isset($member->doc)) {
-      $doc = $member->doc;
-      $doc = preg_replace('/^\s*\/\*\*/', '', $doc);
-      $doc = preg_replace('/\*\/\s*$/', '', $doc);
-      if (trim($doc) != '')
-        $generatedDoc .= "\n   * " . trim($doc) . "\n   *";
-    }
-    if (isset($member->comment)) {
+
+    if (isset($member->comment))
       $generatedDoc .= "\n   * " . trim($member->comment);
-    }
     if (isset($member->type))
       $generatedDoc .= "\n   * @var " . $member->type . "___stub";
     if (isset($member->{'return'}))
@@ -247,12 +267,15 @@ function generateStubString ($stub) {
     if (isset($member->protection) || isset($member->autocomplete))
       $classString .= ' ' .
         (isset($member->autocomplete) && $member->autocomplete == 'invisible' ? 'private' : $member->protection);
+    else if ($member->symbolType == 'property')
+      $classString .= ' public';
+      
     if (isset($member->storageClass) && count($member->storageClass) > 0)
       $classString .= ' ' . implode(' ', $member->storageClass);
     if ($member->symbolType == 'method')
       $classString .= " function {$member->name} (" . implode(', ', $member->arguments) . ");";
     else if ($member->symbolType == 'property')
-      $classString .= " public \${$member->name};";
+      $classString .= " \${$member->name};";
     else 
       assertTrue(false);
 

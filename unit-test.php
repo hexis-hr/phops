@@ -124,7 +124,7 @@ function runUnitTests () {
       //$files[] = $file;
       //echo $file . "\n";
       $fileContent = file_get_contents($file);
-      if (preg_match('/(?si)unittest/', $fileContent) == 0)
+      if (preg_match('/(?si)function\s*unittest/', $fileContent) == 0)
         continue;
       //if (preg_match_all('/(?si)(extends|implements)\s+([a-z0-9_\x80-\xff]+)/', $fileContent, $matches) == 0) {
       //  //var_dump($matches);
