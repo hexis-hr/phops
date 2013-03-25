@@ -61,5 +61,5 @@ if (!isset($_SERVER['unitTest_wdUrl']) || !$_SERVER['unitTest_wdUrl'])
 
 define("version_assert", $_SERVER['environment'] != 'production');
 define("version_unittest", $_SERVER['environment'] == 'unittest');
-define("version_development", $_SERVER['environment'] == 'development');
+define("version_development", $_SERVER['environment'] == 'development' || $_SERVER['environment'] == 'design');
 
