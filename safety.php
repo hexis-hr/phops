@@ -511,7 +511,7 @@ function render_exception ($e) {
 
     echo "<h1 style='font-size: 1.2em;' data-message='{$e->{'class'}}: ". htmlspecialchars($e->message, ENT_QUOTES)
       . "'>{$e->{'class'}}: " .
-      (strlen($e->message) > 50 ? htmlspecialchars(substr($e->message, 0, 50), ENT_QUOTES) .
+      (strlen($e->message) > 80 ? htmlspecialchars(substr($e->message, 0, 80), ENT_QUOTES) .
       ' <a href="#" onclick="this.parentNode.textContent = this.parentNode.getAttribute(\'data-message\');' .
       'return false;">...</a>' : htmlspecialchars($e->message, ENT_QUOTES)) . "</h1>";
     echo "<ul>";
