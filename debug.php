@@ -86,7 +86,7 @@ function debugObject ($object) {
 function debugDump ($symbol) {
   if ($symbol === null)
     return 'null';
-  if (in_array(gettype($symbol), array('string', 'integer', 'double', 'float')))
+  if (in_array(gettype($symbol), array('string', 'integer', 'double', 'float', 'array')))
     return json_encode($symbol);
   if (is_object($symbol))
     return get_class($symbol) . ' {}';
