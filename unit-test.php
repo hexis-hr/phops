@@ -305,6 +305,58 @@ class unitTest_webContext {
   protected $browser;
   protected $context;
 
+  function __get ($name) {
+    version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-]+$/', $name) > 0);
+    
+    //$elements = $this->query('descendant-or-self::*[@data-element="' . $name . '"]');
+    //if (count($elements) == 1)
+    //  return $elements;
+    
+    // todo: optimize
+
+    //$elements = $this->query('descendant::*[@data-element="' . $name . '"]');
+    //foreach ($elements as $element) {
+      //$parentElement = $element->
+    //}
+    
+    if (false) {
+    while (true) {
+      $elements = $allElements->query('self::*[@data-element="' . $name . '"]');
+      if (count($elements) == 0) {
+        $allElements = $allElements->query('./*[descendant-or-self::*/@data-element]');
+        if (count($allElements) == 0)
+          break;
+        continue;
+      }
+      return $elements;
+    }
+    }
+    
+    
+    if (true) {
+
+    //$allElements = $this->query('for $a in ./* return $a');
+    $allElements = $this->query('./*');
+    //$allElements = $this->query('./*[not(html)]');
+    //if (count($allElements) == 0)
+    //  $allElements = $this->query('./*/*');
+    while (true) {
+      $elements = $allElements->query('self::*[@data-element="' . $name . '" or @name="' . $name . '"]');
+      if (count($elements) == 0) {
+        $allElements = $allElements->query('./*[descendant-or-self::*/@data-element or descendant-or-self::*/@name]');
+        if (count($allElements) == 0)
+          break;
+        continue;
+      }
+      return $elements;
+    }
+    
+    }
+    
+
+    assertTrue(false, "Undefined " . get_called_class() . "->$name");
+  }
+
   function query ($query) {
     $using = 'css selector';
     if (in_array($query, array('.', '..')) || preg_match('/\/|\@|\:\:|\.\./', $query))
@@ -411,7 +463,7 @@ class unitTest_webBrowser extends unitTest_webContext {
   
   function redirect ($url) {
     if (strpos($url, '://') == false) {
-      assertTrue(isset($_SERVER['baseUrl']), "baseUrl not set", 'unitTestEnvironmentException');
+      enforce('unitTestEnvironmentException', isset($_SERVER['baseUrl']), "baseUrl not set");
       $url = $_SERVER['baseUrl'] . (substr($url, 0, 1) == '/' ? substr($url, 1) : $url);
     }
     $this->context->open($url);
@@ -474,11 +526,19 @@ class unitTest_element extends unitTest_webContext {
   }
   
   function __get ($name) {
-    return $this->{'_get_' . $name}();
+
+    if (method_exists($this, '_get_' . $name))
+      return $this->{'_get_' . $name}();
+    
+    return parent::__get($name);
   }
   
   function _get_name () {
     return $this->context->name();
+  }
+  
+  function _get_text () {
+    return $this->context->text();
   }
   
   function _set_value ($value) {
