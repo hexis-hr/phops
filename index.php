@@ -42,11 +42,13 @@ function staticIndex ($file, $line, $key, $callback = null) {
   if (isset($map->{"$file:$line-$key"}))
     return $map->{"$file:$line-$key"};
     
-  $indexFile = sys_get_temp_dir() . '/' . substr(pathinfo($file, PATHINFO_FILENAME), 0, 10) . '__'
+  $indexFile = $_SERVER['cachePath'] . '/' . substr(pathinfo($file, PATHINFO_FILENAME), 0, 10) . '__'
     . substr(preg_replace('/(?i)[^a-z0-9]+/', '', $key), 0, 10) . '__' . sha1("$file:$line-$key") . '.index';
   
-  if (!is_file($indexFile) || codeBaseTimestamp() >= filemtime($indexFile))
+  if (!is_file($indexFile) || (version_development && codeBaseTimestamp() >= filemtime($indexFile))) {
+    directory(dirname($indexFile));
     file_put_contents($indexFile, serialize($callback()));
+  }
   
   $map->{"$file:$line-$key"} = unserialize(file_get_contents($indexFile));
   

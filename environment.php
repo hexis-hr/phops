@@ -49,6 +49,9 @@ $_SERVER['librariesPath'][] = __DIR__;
 if (!isset($_SERVER['setupPath']) || !$_SERVER['setupPath'])
   $_SERVER['setupPath'] = $_SERVER['basePath'] . '/setup/auto-setup.php';
 
+if (!isset($_SERVER['cachePath']) || !$_SERVER['cachePath'])
+  $_SERVER['cachePath'] = sys_get_temp_dir();
+
 if (!isset($_SERVER['remoteAddress']) || !$_SERVER['remoteAddress'])
   $_SERVER['remoteAddress'] = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null);
 
@@ -61,6 +64,9 @@ if (!isset($_SERVER['unitTest_wdUrl']) || !$_SERVER['unitTest_wdUrl'])
 
 define("version_assert", $_SERVER['environment'] != 'production');
 define("version_unittest", $_SERVER['environment'] == 'unittest');
+define("version_test", $_SERVER['environment'] == 'test' || $_SERVER['environment'] == 'unittest');
 define("version_development", $_SERVER['environment'] == 'development' || $_SERVER['environment'] == 'design');
 define("version_design", $_SERVER['environment'] == 'design');
+define("version_functional", $_SERVER['environment'] != 'design');
+define("version_production", $_SERVER['environment'] == 'production');
 
