@@ -20,6 +20,7 @@ set_include_path('.' . PATH_SEPARATOR . $newIncludePaths . PATH_SEPARATOR . get_
 
 // no code is run, only definitions
 require_once(dirname(__FILE__) . '/functions.php');
+require_once(dirname(__FILE__) . '/overload.php');
 require_once(dirname(__FILE__) . '/mail.php');
 require_once(dirname(__FILE__) . '/safety.php');
 require_once(dirname(__FILE__) . '/context.php');
