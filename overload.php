@@ -39,6 +39,14 @@ function hasMember ($entity, $member) {
   
 }
 
+function toRaw ($value) {
+  version_assert and assertTrue(count(func_get_args()) == 1);
+  if (is_object($value) && hasMember($value, 'toRaw'))
+    return $value->toRaw();
+  else
+    return $value;
+}
+
 function sum () {
   $result = 0;
   foreach (func_get_args() as $argument)
@@ -46,28 +54,35 @@ function sum () {
   return $result;
 }
 
-function concat () {
+function opConcat () {
   $arguments = func_get_args();
   
   version_assert and assertTrue(count($arguments) >= 1);
-  if (is_string($arguments[0]))
-    $result = '';
-  else if (is_array($arguments[0]))
-    $result = array();
-  else
-    assertTrue(false);
+  $result = $arguments[0];
     
-  foreach ($arguments as $argument) {
-    if (is_string($argument)) {
-      version_assert and assertTrue(is_string($result));
-      $result .= $argument;
-    } else if (is_array($argument)) {
-      version_assert and assertTrue(is_array($result));
+  foreach (array_slice($arguments, 1) as $argument) {
+    if (is_object($result) && hasMember($result, 'opConcat'))
+      $result = $result->opConcat($argument);
+    else if (is_object($argument) && hasMember($argument, 'opConcat'))
+      $result = $argument->opConcat($result);
+    else if (is_array($argument)) {
+      version_assert and assertTrue(is_array($result) && is_array($argument));
       $result = array_merge($result, $argument);
     } else {
-      assertTrue(false);
+      version_assert and assertTrue(is_string(toRaw($result)) && is_string(toRaw($argument)));
+      $result = toRaw($result) . toRaw($argument);
     }
   }
   
   return $result;
+}
+
+function opEquals ($lhs, $rhs) {
+  version_assert and assertTrue(count(func_get_args()) == 2);
+  if (is_object($lhs) && hasMember($lhs, 'opEquals'))
+    return $lhs->opEquals($rhs);
+  else if (is_object($rhs) && hasMember($rhs, 'opEquals'))
+    return $rhs->opEquals($lhs);
+  else
+    return toRaw($lhs) === toRaw($rhs);
 }
