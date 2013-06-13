@@ -16,7 +16,7 @@ function allMembers ($entity) {
     if (method_exists($entity, 'allMembers'))
       return $entity->allMembers();
     else
-      return concat(array_keys(get_object_vars($entity)), get_class_methods($entity));
+      return opConcat(array_keys(get_object_vars($entity)), get_class_methods($entity));
   } else {
     assertTrue(false);
   }

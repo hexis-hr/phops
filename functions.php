@@ -388,8 +388,13 @@ function _unflatten (&$result, $key, $value, $delimiter = '_') {
 
 function postToURL ($url, $postData, $timeout = 3000) {
   $curl = curl_init($url);
+  curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+    'Accept-Charset: utf-8',
+    'Content-Type: application/x-www-form-urlencoded; charset=utf-8',
+    'User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:18.0) Gecko/20100101 Firefox/18.0',
+  ));
   curl_setopt($curl, CURLOPT_POST, 1);
-  curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+  curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($postData, '', '&'));
   curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
   curl_setopt($curl, CURLOPT_HEADER, 0);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
