@@ -47,6 +47,21 @@ function toRaw ($value) {
     return $value;
 }
 
+function toString ($value) {
+  version_assert and assertTrue(count(func_get_args()) == 1);
+  if (is_object($value) && hasMember($value, 'toString'))
+    return $value->toString();
+  else if (is_object($value) && hasMember($value, 'toRaw'))
+    return toString($value->toRaw());
+  else if (is_array($value)) {
+    $intermediate = array();
+    foreach ($value as $v)
+      $intermediate[] = toString($v);
+    return '[' . implode(', ', $intermediate) . ']';
+  } else
+    return (string) $value;
+}
+
 function sum () {
   $result = 0;
   foreach (func_get_args() as $argument)
