@@ -26,16 +26,16 @@ function allMembers ($entity) {
 function hasMember ($entity, $member) {
   version_assert and assertTrue(is_string($member));
   
-  if (is_array($entity)) {
+  if (is_array($entity))
     return array_key_exists($member, $entity);
-  } else if (is_object($entity)) {
-    if (method_exists($entity, 'hasMember'))
-      return $entity->hasMember($member);
-    else
-      return property_exists($entity, $member) || method_exists($entity, $member);
-  } else {
+  else if (is_object($entity) && method_exists($entity, 'hasMember'))
+    return $entity->hasMember($member);
+  else if (is_object($entity) && method_exists($entity, 'opDispatch'))
+    return $entity->opDispatch($member) !== null;
+  else if (is_object($entity))
+    return property_exists($entity, $member) || method_exists($entity, $member);
+  else
     assertTrue(false);
-  }
   
 }
 
@@ -100,4 +100,19 @@ function opEquals ($lhs, $rhs) {
     return $rhs->opEquals($lhs);
   else
     return toRaw($lhs) === toRaw($rhs);
+}
+
+function opDispatch ($symbol) {
+  version_assert and assertTrue(count(func_get_args()) == 1);
+  if (is_array($symbol)) {
+    version_assert and assertTrue(count($symbol) == 2);
+    if (method_exists($symbol[0], $symbol[1]))
+      return $symbol;
+    if (method_exists($symbol[0], 'opDispatch')) {
+      $dispatched = $symbol[0]->opDispatch($symbol[1]);
+      if ($dispatched !== null)
+        return $dispatched;
+    }
+  }
+  assertTrue(false);
 }
