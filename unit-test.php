@@ -190,6 +190,9 @@ function runUnitTests () {
         $timestamp = microtime(true);
         echo '.';
       }
+      $reflector = new ReflectionMethod($class, $method);
+      if ($reflector->getDeclaringClass()->getName() != $class)
+        continue;
       if (substr(strtolower($method), 0, 8) == 'unittest' && !in_array("$class::$method", array(
         'unitTest_webBrowser::unitTestElement',
         'unitTest_element::unitTestElement',
@@ -332,6 +335,11 @@ class unitTest_webContext {
     }
     }
     
+    // temporary optimization
+    $elements = $this->query('//*[@data-element="' . $name . '" or @name="' . $name . '"]');
+    if (count($elements) == 1)
+      return $elements;
+    
     
     if (true) {
 
@@ -355,6 +363,10 @@ class unitTest_webContext {
     
 
     assertTrue(false, "Undefined " . get_called_class() . "->$name");
+  }
+  
+  function __set ($name, $value) {
+    assertTrue(false);
   }
 
   function query ($query) {

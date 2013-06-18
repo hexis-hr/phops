@@ -6,6 +6,24 @@
  *
  */
 
+function finally_ ($try, $finally) {
+  try { call_user_func($try); }
+  catch (Exception $e) {}
+  call_user_func($finally);
+  if (isset($e))
+    throw $e;
+}
+
+class scopeExit {
+  function __construct ($callback) {
+    $this->callback = $callback;
+  }
+  function __destruct () {
+    // todo: crashes on exceptions
+    call_user_func($this->callback);
+  }
+}
+
 function function_alias ($original, $alias) {
   
   $args = func_get_args();
