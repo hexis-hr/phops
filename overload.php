@@ -39,6 +39,16 @@ function hasMember ($entity, $member) {
   
 }
 
+function _toCorrectClass ($object) {
+  version_assert and assertTrue(count(func_get_args()) == 1);
+  version_assert and assertTrue(is_object($object));
+  if (get_class($object) != 'stdClass')
+    return $object;
+  version_assert and assertTrue(isset($object->__class));
+  $class = $object->__class;
+  return new $class($object);
+}
+
 function toRaw ($value) {
   version_assert and assertTrue(count(func_get_args()) == 1);
   if (is_object($value) && hasMember($value, 'toRaw'))
@@ -49,6 +59,8 @@ function toRaw ($value) {
 
 function toString ($value) {
   version_assert and assertTrue(count(func_get_args()) == 1);
+  if (is_object($value))
+    $value = _toCorrectClass($value);
   if (is_object($value) && hasMember($value, 'toString'))
     return $value->toString();
   else if (is_object($value) && hasMember($value, 'toRaw'))

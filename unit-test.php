@@ -138,7 +138,12 @@ function runUnitTests () {
     //  break;
     //var_dump($file);
   }
+  
   echo ' ' . count($files) . "\n";
+
+  usort($files, function ($lhs, $rhs) {
+    return filemtime($rhs) - filemtime($lhs);
+  });
   
   echo 'Including files ..';
   //while (count($files) > 0) {
@@ -208,6 +213,12 @@ function runUnitTests () {
   echo ' ' . count($tests) . "\n";
   
   $result->tests->count = count($tests);
+
+  usort($tests, function ($lhs, $rhs) {
+    $lhsReflection = is_string($lhs) ? new ReflectionFunction($lhs) : new ReflectionMethod($lhs[0], $lhs[1]);
+    $rhsReflection = is_string($rhs) ? new ReflectionFunction($rhs) : new ReflectionMethod($rhs[0], $rhs[1]);
+    return filemtime($rhsReflection->getFileName()) - filemtime($lhsReflection->getFileName());
+  });
   
   echo "\nRunning " . count($tests) . " tests:\n";
   
