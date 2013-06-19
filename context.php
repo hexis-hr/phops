@@ -35,12 +35,13 @@ class context {
   
   static function invoke ($type, $value, $callback) {
     self::enter($type, $value);
-    try { call_user_func($callback); }
+    try { $result = call_user_func($callback); }
     // catch safeException only?
     catch (Exception $e) {}
     self::leave($type);
     if (isset($e))
       throw $e;
+    return $result;
   }
 
 }
