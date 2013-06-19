@@ -9,9 +9,13 @@
 class context {
   
   static $stacks = array();
+
+  static function exists ($type) {
+    return hasMember(self::$stacks, $type) && count(self::$stacks[$type]) > 0;
+  }
   
   static function current ($type) {
-    assertTrue(isset(self::$stacks[$type]) && count(self::$stacks[$type]) > 0);
+    assertTrue(self::exists($type));
     return end(self::$stacks[$type]);
   }
   
