@@ -37,11 +37,11 @@ function assertTrue ($condition, $message = 'Assertion failure') {
     throw new assertError($message);
 }
 
-function assertThrown ($exception, $callback, $message = 'Assertion failure') {
+function assertThrown ($throwable = 'safeException', $callback, $message = 'Assertion failure') {
   try {
     $callback();
   } catch (Exception $e) {
-    if (is_a($e, $exception, true))
+    if (is_a($e, $throwable, true))
       return;
   }
   assertTrue(false, $message);
