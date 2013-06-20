@@ -246,7 +246,7 @@ function runUnitTests () {
         $result->tests->errors[] = $id;
         isUnitTestRun($test, false);
       } catch (Exception $e) {
-        echo ": failure";
+        echo ": failure - " . $e->getMessage();
         $result->tests->all[$id]->status = 'failure';
         $result->tests->all[$id]->message = $e->getMessage();
         $result->tests->all[$id]->trace = (string) $e;
@@ -320,7 +320,7 @@ class unitTest_webContext {
   protected $context;
 
   function __get ($name) {
-    version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-]+$/', $name) > 0);
+    version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
     
     //$elements = $this->query('descendant-or-self::*[@data-element="' . $name . '"]');
     //if (count($elements) == 1)
