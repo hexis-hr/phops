@@ -6,39 +6,6 @@
  *
  */
 
-function allMembers ($entity) {
-  
-  $result = array();
-  
-  if (is_array($entity)) {
-    return array_keys($entity);
-  } else if (is_object($entity)) {
-    if (method_exists($entity, 'allMembers'))
-      return $entity->allMembers();
-    else
-      return opConcat(array_keys(get_object_vars($entity)), get_class_methods($entity));
-  } else {
-    assertTrue(false);
-  }
-
-}
-
-function hasMember ($entity, $member) {
-  version_assert and assertTrue(is_string($member));
-  
-  if (is_array($entity))
-    return array_key_exists($member, $entity);
-  else if (is_object($entity) && method_exists($entity, 'hasMember'))
-    return $entity->hasMember($member);
-  else if (is_object($entity) && method_exists($entity, 'opDispatch'))
-    return $entity->opDispatch($member) !== null;
-  else if (is_object($entity))
-    return property_exists($entity, $member) || method_exists($entity, $member);
-  else
-    assertTrue(false);
-  
-}
-
 function _toCorrectClass ($object) {
   version_assert and assertTrue(count(func_get_args()) == 1);
   version_assert and assertTrue(is_object($object));
@@ -114,17 +81,20 @@ function opEquals ($lhs, $rhs) {
     return toRaw($lhs) === toRaw($rhs);
 }
 
-function opDispatch ($symbol) {
-  version_assert and assertTrue(count(func_get_args()) == 1);
-  if (is_array($symbol)) {
-    version_assert and assertTrue(count($symbol) == 2);
-    if (method_exists($symbol[0], $symbol[1]))
-      return $symbol;
-    if (method_exists($symbol[0], 'opDispatch')) {
-      $dispatched = $symbol[0]->opDispatch($symbol[1]);
-      if ($dispatched !== null)
-        return $dispatched;
-    }
+function opDispatch ($symbol, $member) {
+  version_assert and assertTrue(count(func_get_args()) == 2);
+  if (is_array($symbol) && array_key_exists($member, $symbol))
+    return $symbol[$member];
+  if (is_object($symbol) && method_exists($symbol, $member))
+    return array($symbol, $member);
+  if (is_object($symbol) && property_exists($symbol, $member))
+    return $symbol->$member;
+  if (method_exists($symbol, 'opDispatch')) {
+    version_assert and assertTrue(hasMember($symbol, $member));
+    return $symbol->opDispatch($member);
+    //$dispatched = $symbol->opDispatch($member);
+    //if ($dispatched !== null)
+    //  return $dispatched;
   }
-  assertTrue(false);
+  assertTrue(false, get_class($symbol));
 }
