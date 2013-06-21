@@ -495,6 +495,10 @@ class unitTest_webBrowser extends unitTest_webContext {
   function url () {
     return $this->context->url();
   }
+  
+  function close () {
+    $this->context->close();
+  }
 
 }
 
