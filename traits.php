@@ -32,7 +32,7 @@ function hasMember ($entity, $member) {
     return $entity->hasMember($member);
   //else if (is_object($entity) && method_exists($entity, 'opDispatch'))
   //  return $entity->opDispatch($member) !== null;
-  else if (is_object($entity))
+  else if (is_string($entity) || is_object($entity))
     return property_exists($entity, $member) || method_exists($entity, $member);
   else
     assertTrue(false);

@@ -15,7 +15,7 @@ class context {
   }
   
   static function current ($type) {
-    assertTrue(self::exists($type));
+    version_assert and assertTrue(self::exists($type));
     return end(self::$stacks[$type]);
   }
   
@@ -25,15 +25,15 @@ class context {
   }
 
   static function enter ($type, $value) {
-    if (!isset(self::$stacks[$type]))
+    if (!hasMember(self::$stacks, $type))
       self::$stacks[$type] = array();
     // having context depth of 128 is most likely a memory leak bug
-    assertTrue(count(self::$stacks[$type]) < 128, "Context too deep");
+    version_assert and assertTrue(count(self::$stacks[$type]) < 128, "Context too deep");
     array_push(self::$stacks[$type], $value);
   }
 
   static function leave ($type) {
-    assertTrue(isset(self::$stacks[$type]) && count(self::$stacks[$type]) > 0);
+    version_assert and assertTrue(self::exists($type));
     array_pop(self::$stacks[$type]);
   }
   
