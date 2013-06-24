@@ -98,3 +98,8 @@ function opDispatch ($symbol, $member) {
   }
   assertTrue(false, get_class($symbol));
 }
+
+function opAccess ($symbol, $member) {
+  $proxy = opDispatch($symbol, $member);
+  return is_callable($proxy) ? call_user_func($proxy) : $proxy;
+}

@@ -43,3 +43,14 @@ function isImplicitlyConvertible ($from, $to) {
   // todo
   assertTrue(false);
 }
+
+function isString ($value) {
+  if (is_string($value))
+    return true;
+  if (hasMember($value, 'isString')) {
+    $result = opAccess($value, 'isString');
+    version_assert and assertTrue(is_bool($result));
+    return $result;
+  }
+  return false;
+}
