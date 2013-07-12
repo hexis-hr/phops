@@ -125,6 +125,37 @@ function uniqueId () {
   return randomKey(24);
 }
 
+function generateRandomUnit () {
+  if (rand(0, 1) == 0)
+    return rand(0, 1048576);
+  else
+    return randomKey(rand(5, 20));
+}
+
+function generateRandomStructure ($size) {
+  
+  if ($size == 1)
+    return generateRandomUnit();
+  
+  if (rand(0, 1) == 0) {
+    $result = array();
+    while ($size > 0) {
+      $subSize = rand(1, ceil($size / 2));
+      $result[] = generateRandomStructure($subSize);
+      $size -= $subSize;
+    }
+  } else {
+    $result = (object) array();
+    while ($size > 0) {
+      $subSize = rand(1, ceil($size / 2));
+      $result->{generateRandomUnit()} = generateRandomStructure($subSize);
+      $size -= $subSize;
+    }
+  }
+  
+  return $result;
+}
+
 /**
  * Allowed 21 characters: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f, g, j, m, s, u
  * Equivalents: 0 = o, 1 = i = l, b = p, d = t, g = h = k, m = n, f = v, r is banned, s = z
