@@ -92,9 +92,6 @@ function opDispatch ($symbol, $member) {
   if (method_exists($symbol, 'opDispatch')) {
     version_assert and assertTrue(hasMember($symbol, $member));
     return $symbol->opDispatch($member);
-    //$dispatched = $symbol->opDispatch($member);
-    //if ($dispatched !== null)
-    //  return $dispatched;
   }
   assertTrue(false, get_class($symbol));
 }

@@ -54,3 +54,8 @@ function isString ($value) {
   }
   return false;
 }
+
+function isInteger ($value) {
+  return !is_object($value) && !is_array($value) && floor($value) == $value;
+}
+

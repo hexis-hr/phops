@@ -26,14 +26,15 @@ require_once(dirname(__FILE__) . '/mail.php');
 require_once(dirname(__FILE__) . '/safety.php');
 require_once(dirname(__FILE__) . '/context.php');
 require_once(dirname(__FILE__) . '/index.php');
+require_once(dirname(__FILE__) . '/cache.php');
+require_once(dirname(__FILE__) . '/setup.php');
+require_once(dirname(__FILE__) . '/unit-test.php');
+require_once(dirname(__FILE__) . '/activity.php');
 require_once(dirname(__FILE__) . '/stub.php');
 
 // initialize
 require_once(dirname(__FILE__) . '/environment.php');
 require_once(dirname(__FILE__) . '/debug.php'); // depends on environment
-require_once(dirname(__FILE__) . '/setup.php');
-require_once(dirname(__FILE__) . '/unit-test.php');
-require_once(dirname(__FILE__) . '/activity.php');
 
 initialize_safety();
 

@@ -21,8 +21,6 @@ function debugMessage ($message) {
   while (isset($backtrace[$i])) {
     $backtraceEntry = (object) $backtrace[$i];
     $i++;
-    //if (isset($backtraceEntry->file) && substr($backtraceEntry->file, 0, strlen(realpath($_SERVER['basePath']))) != realpath($_SERVER['basePath']))
-    //  continue;
     if (isset($backtraceEntry->file) && realpath($backtraceEntry->file) == realpath(__FILE__))
       continue;
     break;
@@ -59,17 +57,23 @@ function debugMessage ($message) {
   $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'][] = (object) array(
     'time' => $timestamp,
     'number' => ++$counter,
-    'file' => isset($backtraceEntry, $backtraceEntry->file) ? str_replace(array('\\', '/'), array('/', '/'), realpath($backtraceEntry->file)) : null,
+    'file' => isset($backtraceEntry, $backtraceEntry->file) ?
+      str_replace(array('\\', '/'), array('/', '/'), realpath($backtraceEntry->file)) : null,
     'line' => isset($backtraceEntry, $backtraceEntry->line) ? $backtraceEntry->line : null,
     'type' => isset($type) ? $type : null,
-    'call' => (isset($backtraceEntry->{'class'}) ? $backtraceEntry->{'class'} . $backtraceEntry->{'type'} : '') . $backtraceEntry->{'function'} . '()',
+    'call' => (isset($backtraceEntry->{'class'}) ? $backtraceEntry->{'class'}
+      . $backtraceEntry->{'type'} : '') . $backtraceEntry->{'function'} . '()',
     'message' => $message,
   );
 
   if (isset($_SERVER['debugPath']))
     file_put_contents($_SERVER['debugPath'],
-      "[" . date("Y-m-d H:i:s", $timestamp) . "." . substr(round($timestamp - floor($timestamp), 6), 2) . "] #{$_SERVER['requestId']}/" . session_id() . (isset($backtraceEntry->file) ? " ({$backtraceEntry->file}:{$backtraceEntry->line})" : '') . (isset($type) ? " $type" : '') . "\n" .
-      "  " . (isset($backtraceEntry->{'class'}) ? $backtraceEntry->{'class'} . $backtraceEntry->{'type'} : '') . $backtraceEntry->{'function'} . "(): $message\n", FILE_APPEND | LOCK_EX);
+      "[" . date("Y-m-d H:i:s", $timestamp) . "." . substr(round($timestamp - floor($timestamp), 6), 2)
+        . "] #{$_SERVER['requestId']}/" . session_id()
+        . (isset($backtraceEntry->file) ? " ({$backtraceEntry->file}:{$backtraceEntry->line})" : '')
+        . (isset($type) ? " $type" : '') . "\n" . "  "
+        . (isset($backtraceEntry->{'class'}) ? $backtraceEntry->{'class'} . $backtraceEntry->{'type'} : '')
+        . $backtraceEntry->{'function'} . "(): $message\n", FILE_APPEND | LOCK_EX);
 
 }
 
@@ -129,7 +133,8 @@ function debugStopwatch ($do, $name) {
   if (!$isRegistered) {
     debug_onShutdown(function () use ($stopwatches) {
       foreach ($stopwatches as $stopwatch)
-        debugUntraceableMessage("stopwatch {$stopwatch->name} measured {$stopwatch->total} seconds in {$stopwatch->calls} measurements");
+        debugUntraceableMessage("stopwatch {$stopwatch->name} measured {$stopwatch->total}"
+          . " seconds in {$stopwatch->calls} measurements");
     });
     $isRegistered = true;
   }
@@ -201,7 +206,8 @@ if (debugMode) {
   if (!isset($debugInit)) {
     $url = null;
     if (isset($_SERVER['HTTP_HOST']))
-			$url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 'https' : 'http') . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
+			$url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 'https' : 'http')
+        . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
     debugMessage("instance startup" . ($url ? " on url: $url" : ''));    
     register_shutdown_function('debug_instance_shutdown');
   }

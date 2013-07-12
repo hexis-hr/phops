@@ -29,12 +29,6 @@ if (!isset($_SERVER['basePath']))
 if (!isset($_SERVER['robots']) || !$_SERVER['robots'])
   $_SERVER['robots'] = 'robots-deny.txt';
 
-
-//if (!isset($_SERVER['dataPath']) || !$_SERVER['dataPath']) {
-//  echo "dataPath not set !";
-//  exit;
-//}
-
 if (!isset($_SERVER['debugMode']) || !$_SERVER['debugMode'])
   $_SERVER['debugMode'] = false;
 
@@ -53,7 +47,8 @@ if (!isset($_SERVER['cachePath']) || !$_SERVER['cachePath'])
   $_SERVER['cachePath'] = sys_get_temp_dir();
 
 if (!isset($_SERVER['remoteAddress']) || !$_SERVER['remoteAddress'])
-  $_SERVER['remoteAddress'] = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null);
+  $_SERVER['remoteAddress'] = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR']
+    : (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null);
 
 if (strpos($_SERVER['remoteAddress'], ',') !== false)
   $_SERVER['remoteAddress'] = trim(substr($_SERVER['remoteAddress'], 0, strpos($_SERVER['remoteAddress'], ',')));

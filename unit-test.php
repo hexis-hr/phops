@@ -12,7 +12,7 @@ class unitTestEnvironmentException extends safeException {}
 class unitTestRequiredException extends safeException {}
 
 function runUnitTests () {
-  //assertTrue(isset($_SERVER['unitTest_result']), "Result file not set");
+
   $result = (object) array(
     'tests' => (object) array(
       'count' => 0,
@@ -22,12 +22,10 @@ function runUnitTests () {
       'errors' => array(),
     ),
   );
-  //var_dump($_SERVER['basePath']);
-  //exit;
+
   $timestamp = microtime(true);
   echo 'Listing files ..';
   $files = array();
-  //$_fc = 0;
 
   $unitTest_excludePath = array();
   if (isset($_SERVER['unitTest_excludePath'])) {
@@ -43,100 +41,29 @@ function runUnitTests () {
 
   $isExcluded = function ($file) use ($unitTest_excludePath) {
     $sFile = str_replace(array('\\', '/'), array('/', '/'), $file);
-    foreach ($unitTest_excludePath as $excludePath) {
-      //echo rtrim(str_replace(array('\\', '/'), array('/', '/'), $excludePath), '/') . "\n";
-      //exit;
-      if (substr($sFile, 0, strlen($excludePath)) == $excludePath) {
-        //$lastExcludedPath = $excludePath;
-        //var_dump($lastExcludedPath);
-        //$isExcluded = true;
-        //break;
+    foreach ($unitTest_excludePath as $excludePath)
+      if (substr($sFile, 0, strlen($excludePath)) == $excludePath)
         return true;
-      }
-    }
     return false;
   };
 
-  //$directoryIterator = new RecursiveDirectoryIterator($_SERVER['basePath']);
-  //$iterator = new RecursiveIteratorIterator($directoryIterator);
-  //$skipIterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($_SERVER['basePath']));
   foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($_SERVER['basePath'])) as $file) {
-    //$skipIterator->nextElement();
-    //$sFile = str_replace(array('\\', '/'), array('/', '/'), $file);
-    //unset($lastExcludedPath);
+
     if (microtime(true) > $timestamp + 1) {
       $timestamp = microtime(true);
       echo '.';
     }
     
-    if ($isExcluded($file)) {
-      /*
-      var_dump($iterator->current());
-      $directoryIterator->next();
-      $iterator->next();
-      var_dump($iterator->current());
-      exit;
-      /**/
+    if ($isExcluded($file))
       continue;
-      //$skipIterator = new RecursiveIteratorIterator(clone $iterator);
-      //var_dump($iterator->current());
-      //var_dump($skipIterator->current());
-      //exit;
-      /*
-      $skipIterator->next();
-      $skipIterator->next();
-      $skipIterator->next();
-      $skipIterator->next();
-      var_dump($skipIterator->current());
-      exit;
-      for ($i = 0; $i < 50; $i++)
-        $skipIterator->next();
-        //var_dump($skipIterator->current());exit;
-      if ($isExcluded($skipIterator->current())) {
-        for ($i = 0; $i < 50; $i++)
-          $iterator->next();
-      }
-      /**/
-    }
 
-    /*
-    $isExcluded = false;
-    if (isset($lastExcludedPath) && substr($sFile, 0, strlen($lastExcludedPath)) == $lastExcludedPath) {
-      //var_dump("o");
-      $isExcluded = true;
-    }
-    if (!$isExcluded)
-      foreach ($unitTest_excludePath as $excludePath) {
-        //echo rtrim(str_replace(array('\\', '/'), array('/', '/'), $excludePath), '/') . "\n";
-        //exit;
-        if (substr($sFile, 0, strlen($excludePath)) == $excludePath) {
-          $lastExcludedPath = $excludePath;
-          //var_dump($lastExcludedPath);
-          $isExcluded = true;
-          break;
-        }
-      }
-    //exit;
-    if ($isExcluded) 
-      continue;
-    /**/
     if (in_array($file->getExtension(), array('php'))) {
-      //$files[] = $file;
-      //echo $file . "\n";
       $fileContent = file_get_contents($file);
       if (preg_match('/(?si)function\s*unittest/', $fileContent) == 0)
         continue;
-      //if (preg_match_all('/(?si)(extends|implements)\s+([a-z0-9_\x80-\xff]+)/', $fileContent, $matches) == 0) {
-      //  //var_dump($matches);
-      //  //$files[] = $file;
-      //  array_unshift($files, $file);
-      //  continue;
-      //}
       $files[] = $file;
     }
-    //if (count($files) > 100)
-    //  break;
-    //var_dump($file);
+
   }
   
   echo ' ' . count($files) . "\n";
@@ -146,7 +73,6 @@ function runUnitTests () {
   });
   
   echo 'Including files ..';
-  //while (count($files) > 0) {
   $i = 0;
   
   // php include can overwrite variable values so we need to isolate include in a function
@@ -161,14 +87,6 @@ function runUnitTests () {
       $timestamp = microtime(true);
       echo '.';
     }
-    //$file = array_shift($files);
-    //echo $file . "\n";
-    //$fileContent = file_get_contents($file);
-    //if (preg_match_all('/(?si)extends\s+([a-z0-9_\x80-\xff]+)/', $fileContent, $matches) > 0) {
-    //  //var_dump($matches);
-    //  $files[] = $file;
-    //}
-    //var_dump(in_array(realpath($file), get_included_files()));
     if (in_array(realpath($file), get_included_files()))
       continue;
     $i++;
@@ -227,7 +145,6 @@ function runUnitTests () {
     foreach ($tests as $key => $test) {
       $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
       echo '  ' . $id;
-      resetUnitTestEnvironment();
       $result->tests->all[$id] = (object) array('status' => 'unknown');
       try {
         call_user_func($test);
@@ -292,25 +209,12 @@ function requireUnitTest () {
     throw new unitTestRequiredException("Unit test $id required");
 }
 
-function resetUnitTestEnvironment () {
-  //if ($webBrowser = webBrowser(false))
-  //  $browser->redirect($_SERVER['baseUrl']);
-}
-
-//function webBrowser ($autoCreate = true) {
 function webBrowser () {
   static $browser;
   if (!isset($browser)) {
-    //if (!$autoCreate)
-    //  return;
     assertTrue(isset($_SERVER['unitTest_wdUrl']));
     $browser = new unitTest_webBrowser($_SERVER['unitTest_wdUrl']);
-    //$browser->redirect($_SERVER['baseUrl']);
-    //$browser = new WebDriver($_SERVER['unitTest_wdUrl']);
-    //$session = $webDriver->session('firefox');
-    //assertTrue(isset($_SERVER['unitTest_wdSession']));
   }
-  //$session = $webDriver->session('firefox');
   return $browser;
 }
 
@@ -321,18 +225,7 @@ class unitTest_webContext {
 
   function __get ($name) {
     version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
-    
-    //$elements = $this->query('descendant-or-self::*[@data-element="' . $name . '"]');
-    //if (count($elements) == 1)
-    //  return $elements;
-    
-    // todo: optimize
 
-    //$elements = $this->query('descendant::*[@data-element="' . $name . '"]');
-    //foreach ($elements as $element) {
-      //$parentElement = $element->
-    //}
-    
     if (false) {
     while (true) {
       $elements = $allElements->query('self::*[@data-element="' . $name . '"]');
@@ -354,11 +247,7 @@ class unitTest_webContext {
     
     if (true) {
 
-    //$allElements = $this->query('for $a in ./* return $a');
     $allElements = $this->query('./*');
-    //$allElements = $this->query('./*[not(html)]');
-    //if (count($allElements) == 0)
-    //  $allElements = $this->query('./*/*');
     while (true) {
       $elements = $allElements->query('self::*[@data-element="' . $name . '" or @name="' . $name . '"]');
       if (count($elements) == 0) {
@@ -385,7 +274,6 @@ class unitTest_webContext {
     if (in_array($query, array('.', '..')) || preg_match('/\/|\@|\:\:|\.\./', $query))
       $using = 'xpath';
     $results = $this->context->elements($using, $query);
-    //assertTrue(count($results) > 0, 'no elements found');
     $wrappedResults = new unitTest_elements();
     foreach ($results as $result)
       $wrappedResults[] = new unitTest_element($this->browser, $result);
@@ -611,63 +499,36 @@ class unitTest_element extends unitTest_webContext {
       'visibility' => $this->context->css('visibility'),
       'hiddenInput' => $this->context->name() == 'input' && $this->context->attribute('type') == 'hidden',
     );
-    $e = null;
+
     try {
       if ($state->display == 'none' || $state->visibility == 'hidden')
-        $this->browser->execute('arguments[0].style.display = "block"; arguments[0].style.visibility = "visible";', array($this));
+        $this->browser->execute('arguments[0].style.display = "block"; arguments[0].style.visibility = "visible";',
+          array($this));
       if ($state->hiddenInput)
         $this->browser->execute('arguments[0].type = "text";', array($this));
       // todo: rewrite
       if ($this->context->name() != 'html')
         $parentCollection = $this->query('..');
-      //try { $e = null; $parentCollection = $this->query('..'); } catch (Exception $e) {}
-      //if (isset($e) || count($parentCollection) == 0)
       if (!isset($parentCollection) || count($parentCollection) == 0)
         $f();
-        //try { $f(); } catch (Exception $e) { sleep(30); throw $e; }
       else
         $parentCollection->one()->_ensureVisible($f);
+      $e = null;
     } catch (Exception $e) {}
     // finally {
-    //try {
     // we don't care if the elements disappear in the meantime, we only want to make sure
     // to hide set their visibility state as it was if they still exist
     if ($this->exists()) {
       if ($state->display == 'none' || $state->visibility == 'hidden')
-        $this->browser->execute('arguments[0].style.display = ' . json_encode($state->display) . '; arguments[0].style.visibility = ' . json_encode($state->visibility) . ';', array($this));
+        $this->browser->execute('arguments[0].style.display = ' . json_encode($state->display)
+          . '; arguments[0].style.visibility = ' . json_encode($state->visibility) . ';', array($this));
        if ($state->hiddenInput)
         $this->browser->execute('arguments[0].type = "hidden";', array($this));
     }
-    //} catch (ObsoleteElementWebDriverError $dontCareE) {
-      // we don't care if the elements disappear in the meantime, we only want to make sure
-      // to hide set their visibility state as it was if they still exist
-    //}
     // }
     if (isset($e))
       throw $e;
   }
-  
-  /*
-  function show () {
-    $this->info->shown = (object) array(
-      'display' => $this->element->css('display'),
-      'visibility' => $this->element->css('visibility'),
-    );
-    $this->browser->execute('arguments[0].style.display = ""; arguments[0].style.visibility = "";', array((object) array('ELEMENT' => $this->element->getID())));
-    return $this;
-  }
-  
-  function hide () {
-    $this->browser->context->execute(
-        'arguments[0].style.display = ' . json_encode(isset($this->info->shown, $this->info->shown->display) ? $this->info->shown->display : 
-          (isset($this->info->shown, $this->info->shown->visibility) && $this->info->shown->visibility == 'hidden' ? '' : 'none')
-        ) . ';' .
-        'arguments[0].style.visibility = ' . json_encode(isset($this->info->shown, $this->info->shown->visibility) ? $this->info->shown->visibility : '') . ';',
-      array((object) array('ELEMENT' => $this->element->getID()))
-    );
-    return $this;
-  }
-  /**/
   
   function moveTo () {
     $this->browser->context->moveto(array('element' => $this->context->getID()));
