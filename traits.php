@@ -59,3 +59,7 @@ function isInteger ($value) {
   return !is_object($value) && !is_array($value) && floor($value) == $value;
 }
 
+function isIterable ($value) {
+  return is_array($value) || $value instanceof Iterator;
+}
+
