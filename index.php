@@ -27,6 +27,23 @@ function codeBaseTimestamp () {
   return $timestamp;
 }
 
+function codeBaseChanged () {
+  static $includedFiles = array();
+  static $result = true;
+  $newIncludedFiles = get_included_files();
+  if (count($includedFiles) != count($newIncludedFiles)) {
+    $fingerprintFile = $_SERVER['cachePath'] . '/codeBase_' . sha1(serialize(get_included_files())) . '.timestamp';
+    if (!is_file($fingerprintFile)) {
+      directory(dirname($fingerprintFile));
+      $touchResult = touch($fingerprintFile);
+      enforce($touchResult, "Could not touch '$fingerprintFile'");
+    }
+    $result = codeBaseTimestamp() > filemtime($fingerprintFile);
+    $includedFiles = $newIncludedFiles;
+  }
+  return $result;
+}
+
 // back-compatibility function
 // staticIndex($file, $line, [$key,] $callback)
 function staticIndex ($file, $line, $key, $callback = null) {
