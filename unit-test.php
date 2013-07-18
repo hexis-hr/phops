@@ -224,6 +224,14 @@ class unitTest_webContext {
   protected $context;
 
   function __get ($name) {
+    return $this->element($name);
+  }
+  
+  function __set ($name, $value) {
+    assertTrue(false);
+  }
+  
+  function element ($name) {
     version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
 
     if (false) {
@@ -265,8 +273,46 @@ class unitTest_webContext {
     assertTrue(false, "Undefined " . get_called_class() . "->$name");
   }
   
-  function __set ($name, $value) {
-    assertTrue(false);
+  function hasElement ($name) {
+    version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
+
+    if (false) {
+    while (true) {
+      $elements = $allElements->query('self::*[@data-element="' . $name . '"]');
+      if (count($elements) == 0) {
+        $allElements = $allElements->query('./*[descendant-or-self::*/@data-element]');
+        if (count($allElements) == 0)
+          break;
+        continue;
+      }
+      return true;
+    }
+    }
+    
+    // temporary optimization
+    $elements = $this->query('//*[@data-element="' . $name . '" or @name="' . $name . '"]');
+    if (count($elements) == 1)
+      return true;
+    
+    
+    if (true) {
+
+    $allElements = $this->query('./*');
+    while (true) {
+      $elements = $allElements->query('self::*[@data-element="' . $name . '" or @name="' . $name . '"]');
+      if (count($elements) == 0) {
+        $allElements = $allElements->query('./*[descendant-or-self::*/@data-element or descendant-or-self::*/@name]');
+        if (count($allElements) == 0)
+          break;
+        continue;
+      }
+      return true;
+    }
+    
+    }
+    
+
+    return false;
   }
 
   function query ($query) {
