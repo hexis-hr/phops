@@ -383,12 +383,15 @@ class unitTest_webContext {
     foreach ($arguments as $key => $value)
       if (is_object($value) && $value instanceof unitTest_element)
         $arguments[$key] = (object) array('ELEMENT' => $value->context->getID());
+    // hack: double quotes bug
+    $script = " var arguments_BaU4UfAZJ7iYW2VmMwpDtpXK = arguments; return eval('(function () { "
+      . "arguments = arguments_BaU4UfAZJ7iYW2VmMwpDtpXK; ' + unescape('" . rawurlencode($script) . "') + '})()');";
     return $this->browser->context->executeScript($script, $arguments);
   }
   
   function exists () {
     try {
-      $this->context->name();
+      $this->_get_tag();
       return true;
     } catch (ObsoleteElementWebDriverError $e) {
       return false;
@@ -434,8 +437,9 @@ class unitTest_webBrowser extends unitTest_webContext {
   function synchronize () {
     $t = microtime(true);
     $waiter = new WebDriverWait($this->driver);
-    $waiter->until(function () {
-      return $this->execute('return typeof(waitForBrowser) == \'undefined\' || !waitForBrowser;');
+    $self = $this;
+    $waiter->until(function () use ($self) {
+      return $self->execute('return typeof(waitForBrowser) == \'undefined\' || !waitForBrowser;');
     }, 'Browser synchronization timeout');
   }
   
@@ -503,7 +507,7 @@ class unitTest_element extends unitTest_webContext {
     return parent::__get($name);
   }
   
-  function _get_name () {
+  function _get_tag () {
     return $this->context->getTagName();
   }
   
@@ -517,16 +521,16 @@ class unitTest_element extends unitTest_webContext {
     $browser = $this->browser;
     $this->_ensureVisible(function () use ($self, $browser, $context, $value) {
       $browser->execute('arguments[0].value = "";', array($self));
-      $context->value(array('value' => str_split($value)));
+      $context->sendKeys($value);
     });
   }
 
   function _get_value () {
-    return $this->context->attribute('value');
+    return $this->context->getAttribute('value');
   }
 
   function _get_displayed () {
-    return $this->context->displayed();
+    return $this->context->isDisplayed();
   }
   
   function attribute ($name) {
@@ -534,9 +538,9 @@ class unitTest_element extends unitTest_webContext {
   }
   
   function select () {
-    assertTrue($this->_get_name() == 'option');
+    assertTrue($this->_get_tag() == 'option');
     $select = $this->queryOne('..');
-    assertTrue($select->_get_name() == 'select');
+    assertTrue($select->_get_tag() == 'select');
     $option = $this;
     $select->_ensureVisible(function () use ($option) {
       $option->click();
@@ -550,9 +554,9 @@ class unitTest_element extends unitTest_webContext {
       return;
     }
     $state = (object) array(
-      'display' => $this->context->css('display'),
-      'visibility' => $this->context->css('visibility'),
-      'hiddenInput' => $this->context->name() == 'input' && $this->context->attribute('type') == 'hidden',
+      'display' => $this->context->getCSSValue('display'),
+      'visibility' => $this->context->getCSSValue('visibility'),
+      'hiddenInput' => $this->_get_tag() == 'input' && $this->attribute('type')->value == 'hidden',
     );
 
     try {
@@ -562,7 +566,7 @@ class unitTest_element extends unitTest_webContext {
       if ($state->hiddenInput)
         $this->browser->execute('arguments[0].type = "text";', array($this));
       // todo: rewrite
-      if ($this->context->name() != 'html')
+      if ($this->_get_tag() != 'html')
         $parentCollection = $this->query('..');
       if (!isset($parentCollection) || count($parentCollection) == 0)
         $f();
