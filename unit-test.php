@@ -13,15 +13,14 @@ class unitTestRequiredException extends safeException {}
 
 function runUnitTests () {
 
-  $result = (object) array(
-    'tests' => (object) array(
-      'count' => 0,
-      'all' => array(),
-      'successes' => array(),
-      'failures' => array(),
-      'errors' => array(),
-    ),
-  );
+  $result = (object) array();
+
+  $flushResult = function () use ($result) {
+    if (isset($_SERVER['unitTest_result']))
+      file_put_contents($_SERVER['unitTest_result'], json_encode($result) . "\n");
+  };
+  
+  $flushResult();
 
   $timestamp = microtime(true);
   echo 'Listing files ..';
@@ -130,7 +129,13 @@ function runUnitTests () {
   
   echo ' ' . count($tests) . "\n";
   
-  $result->tests->count = count($tests);
+  $result->tests = (object) array(
+    'count' => count($tests),
+    'all' => array(),
+    'successes' => array(),
+    'failures' => array(),
+    'errors' => array(),
+  );
 
   usort($tests, function ($lhs, $rhs) {
     $lhsReflection = is_string($lhs) ? new ReflectionFunction($lhs) : new ReflectionMethod($lhs[0], $lhs[1]);
@@ -140,12 +145,18 @@ function runUnitTests () {
   
   echo "\nRunning " . count($tests) . " tests:\n";
   
+  foreach ($tests as $key => $test) {
+    $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+    $result->tests->all[$id] = (object) array('status' => 'unknown');
+  }
+  
+  $flushResult();
+  
   do {
     $unhandledCount = count($tests);
     foreach ($tests as $key => $test) {
       $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
       echo '  ' . $id;
-      $result->tests->all[$id] = (object) array('status' => 'unknown');
       try {
         call_user_func($test);
         echo ": success";
@@ -158,6 +169,7 @@ function runUnitTests () {
       } catch (unitTestEnvironmentException $e) {
         echo ": error";
         $result->tests->all[$id]->status = 'error';
+        $result->tests->all[$id]->report = error_report($e);
         $result->tests->all[$id]->message = $e->getMessage();
         $result->tests->all[$id]->trace = (string) $e;
         $result->tests->errors[] = $id;
@@ -165,6 +177,7 @@ function runUnitTests () {
       } catch (Exception $e) {
         echo ": failure - " . $e->getMessage();
         $result->tests->all[$id]->status = 'failure';
+        $result->tests->all[$id]->report = error_report($e);
         $result->tests->all[$id]->message = $e->getMessage();
         $result->tests->all[$id]->trace = (string) $e;
         $result->tests->failures[] = $id;
@@ -172,14 +185,13 @@ function runUnitTests () {
       }
       unset($tests[$key]);
       echo "\n";
+      $flushResult();
     }
   } while (count($tests) > 0 && count($tests) < $unhandledCount);
   
+  $flushResult();
+  
   echo "\nResults: \n";
-  
-  if (isset($_SERVER['unitTest_result']))
-    file_put_contents($_SERVER['unitTest_result'], json_encode($result) . "\n");
-  
   echo "  Total:   " . $result->tests->count . "\n";
   echo "  Success: " . count($result->tests->successes) . "\n";
   echo "  Failure: " . count($result->tests->failures) . "\n";

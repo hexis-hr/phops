@@ -109,11 +109,11 @@ function uncaught_exception_handler ($e) {
 }
 
 
-function generate_exception_report ($e) {
+function error_report ($e) {
 
   $exception = exception_to_stdclass($e);
   
-  if (!session_id())
+  if (!session_id() && !headers_sent())
     session_start();
   
   $report = (object) array();
@@ -292,7 +292,7 @@ function extract_code_snippet ($file, $line) {
   return $snippet;
 }
 
-function generate_html_report ($report) {
+function render_error_report ($report) {
 
   ob_start();
   
@@ -340,6 +340,8 @@ function generate_html_report ($report) {
   echo "</pre>";
   
   echo "<h1>Trace</h1>";
+  echo render_exception($report->exception);
+  /*
   echo "<ul>";
   $firstItem = true;
   foreach (array_merge(array($report->exception), $report->exception->trace) as $traceItem) {
@@ -385,6 +387,7 @@ function generate_html_report ($report) {
       $firstItem = false;
   }
   echo "</ul>";
+  /**/
   
   if (isset($report->debug)) {
     echo "<h1>Debug</h1>";
