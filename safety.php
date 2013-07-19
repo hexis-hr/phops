@@ -178,18 +178,20 @@ function error_report ($e) {
   
   $report->rawData = (object) array();
   
-  if (isset($_GET))
-    $report->rawData->get = $_GET;
-  if (isset($_POST))
-    $report->rawData->post = $_POST;
-  if (isset($_SESSION))
-    $report->rawData->session = $_SESSION;
-  if (isset($_COOKIE))
-    $report->rawData->cookie = $_COOKIE;
+  if (php_sapi_name() != "cli") {
+    if (isset($_GET))
+      $report->rawData->get = $_GET;
+    if (isset($_POST))
+      $report->rawData->post = $_POST;
+    if (isset($_SESSION))
+      $report->rawData->session = $_SESSION;
+    if (isset($_COOKIE))
+      $report->rawData->cookie = $_COOKIE;
+    if (isset($_FILES))
+      $report->rawData->files = $_FILES;
+  }
   if (isset($_SERVER))
     $report->rawData->server = $_SERVER;
-  if (isset($_FILES))
-    $report->rawData->files = $_FILES;
 
   $report->additional = (object) array();
   foreach (safety_additional_data() as $name => $value)
@@ -298,9 +300,10 @@ function render_error_report ($report) {
   
   echo '<div>';
 
-  echo "<h1>" . (isset($report->title) ? htmlspecialchars($report->title) : '(no title)') . "</h1>";
+  if (isset($report->title))
+    echo "<h1>" . (isset($report->title) ? htmlspecialchars($report->title) : '(no title)') . "</h1>";
   
-  echo '<button onclick="jQuery(\'.extra-information\').show();">Show everything</button>';
+  //echo '<button onclick="jQuery(\'.extra-information\').show();">Show everything</button>';
   
   echo "<h1>General info</h1>";
   echo "<pre>";
@@ -412,19 +415,23 @@ function render_error_report ($report) {
     echo '</ul>';
   }
   
-  echo "<h1>GET</h1>";
-  echo "<pre>";
-  ob_start();
-  print_r($report->rawData->get);
-  echo htmlspecialchars(ob_get_clean());
-  echo "</pre>";
+  if (isset($report->rawData->get)) {
+    echo "<h1>GET</h1>";
+    echo "<pre>";
+    ob_start();
+    print_r($report->rawData->get);
+    echo htmlspecialchars(ob_get_clean());
+    echo "</pre>";
+  }
   
-  echo "<h1>POST</h1>";
-  echo "<pre>";
-  ob_start();
-  print_r($report->rawData->post);
-  echo htmlspecialchars(ob_get_clean());
-  echo "</pre>";
+  if (isset($report->rawData->post)) {
+    echo "<h1>POST</h1>";
+    echo "<pre>";
+    ob_start();
+    print_r($report->rawData->post);
+    echo htmlspecialchars(ob_get_clean());
+    echo "</pre>";
+  }
   
   if (isset($report->rawData->session)) {
     echo "<h1>SESSION</h1>";
