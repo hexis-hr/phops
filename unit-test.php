@@ -233,6 +233,8 @@ class unitTest_webContext {
   
   function element ($name) {
     version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
+    
+    $this->browser->synchronize();
 
     if (false) {
     while (true) {
@@ -275,6 +277,8 @@ class unitTest_webContext {
   
   function hasElement ($name) {
     version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
+    
+    $this->browser->synchronize();
 
     if (false) {
     while (true) {
@@ -316,10 +320,10 @@ class unitTest_webContext {
   }
 
   function query ($query) {
-    $using = 'css selector';
+    $using = 'cssSelector';
     if (in_array($query, array('.', '..')) || preg_match('/\/|\@|\:\:|\.\./', $query))
       $using = 'xpath';
-    $results = $this->context->elements($using, $query);
+    $results = $this->context->findElements(call_user_func(array('WebDriverBy', $using), $query));
     $wrappedResults = new unitTest_elements();
     foreach ($results as $result)
       $wrappedResults[] = new unitTest_element($this->browser, $result);
@@ -379,10 +383,7 @@ class unitTest_webContext {
     foreach ($arguments as $key => $value)
       if (is_object($value) && $value instanceof unitTest_element)
         $arguments[$key] = (object) array('ELEMENT' => $value->context->getID());
-    return $this->browser->context->execute(array(
-      'script' => $script,
-      'args' => $arguments,
-    ));
+    return $this->browser->context->executeScript($script, $arguments);
   }
   
   function exists () {
@@ -403,8 +404,8 @@ class unitTest_webBrowser extends unitTest_webContext {
   
   function __construct ($url) {
     try {
-      $this->driver = new WebDriver($url);
-      $this->context = $this->driver->session('firefox');
+      $this->driver = new WebDriver($url, array(WebDriverCapabilityType::BROWSER_NAME => 'firefox'));
+      $this->context = $this->driver;
     } catch (WebDriverException $e) {
       throw new unitTestEnvironmentException("Could not open a browser session", 0, $e);
     } catch (WebDriverCurlException $e) {
@@ -423,11 +424,19 @@ class unitTest_webBrowser extends unitTest_webContext {
       enforce('unitTestEnvironmentException', isset($_SERVER['baseUrl']), "baseUrl not set");
       $url = $_SERVER['baseUrl'] . (substr($url, 0, 1) == '/' ? substr($url, 1) : $url);
     }
-    $this->context->open($url);
+    $this->context->get($url);
   }
 
   function url () {
-    return $this->context->url();
+    return $this->context->getCurrentURL();
+  }
+
+  function synchronize () {
+    $t = microtime(true);
+    $waiter = new WebDriverWait($this->driver);
+    $waiter->until(function () {
+      return $this->execute('return typeof(waitForBrowser) == \'undefined\' || !waitForBrowser;');
+    }, 'Browser synchronization timeout');
   }
   
   function close () {
@@ -495,11 +504,11 @@ class unitTest_element extends unitTest_webContext {
   }
   
   function _get_name () {
-    return $this->context->name();
+    return $this->context->getTagName();
   }
   
   function _get_text () {
-    return $this->context->text();
+    return $this->context->getText();
   }
   
   function _set_value ($value) {
@@ -521,7 +530,7 @@ class unitTest_element extends unitTest_webContext {
   }
   
   function attribute ($name) {
-    return new unitTest_attribute($this->context->attribute($name));
+    return new unitTest_attribute($this->context->getAttribute($name));
   }
   
   function select () {
