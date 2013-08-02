@@ -440,6 +440,10 @@ class unitTest_webBrowser extends unitTest_webContext {
       $url = $_SERVER['baseUrl'] . (substr($url, 0, 1) == '/' ? substr($url, 1) : $url);
     }
     $this->context->get($url);
+    if (strpos($this->source(), 'error-hmnb9a525V77pG545SXkqmfW') !== false) {
+      $result = preg_match('/error-hmnb9a525V77pG545SXkqmfW\:\s*"((\\\\"|[^\"])+)"/', $this->source(), $match);
+      assertTrue(false, $result > 0 ? $match[1] : 'Error in page');
+    }
   }
 
   function url () {
@@ -457,6 +461,10 @@ class unitTest_webBrowser extends unitTest_webContext {
   
   function close () {
     $this->context->close();
+  }
+  
+  function source () {
+    return $this->context->getPageSource();
   }
 
 }

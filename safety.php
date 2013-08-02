@@ -100,6 +100,8 @@ function shutdown_error_handler () {
 }
 
 function uncaught_exception_handler ($e) {
+  // todo: move to a more proper location
+  echo '<!-- error-hmnb9a525V77pG545SXkqmfW: ' . json_encode(exception_to_stdclass($e)->message) . ' -->';
   // todo: nice cli exception render
   if (php_sapi_name() == "cli")
     echo $e;
