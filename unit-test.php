@@ -388,6 +388,7 @@ class unitTest_webContext {
     $this->_ensureVisible(function () use ($context) {
       $context->click();
     });
+    assertTrue(!$this->browser->hasError(), 'Error in page: ' . $this->browser->errorMessage());
     return $this;
   }
   
@@ -440,10 +441,7 @@ class unitTest_webBrowser extends unitTest_webContext {
       $url = $_SERVER['baseUrl'] . (substr($url, 0, 1) == '/' ? substr($url, 1) : $url);
     }
     $this->context->get($url);
-    if (strpos($this->source(), 'error-hmnb9a525V77pG545SXkqmfW') !== false) {
-      $result = preg_match('/error-hmnb9a525V77pG545SXkqmfW\:\s*"((\\\\"|[^\"])+)"/', $this->source(), $match);
-      assertTrue(false, $result > 0 ? $match[1] : 'Error in page');
-    }
+    assertTrue(!$this->hasError(), 'Error in page: ' . $this->errorMessage());
   }
 
   function url () {
@@ -465,6 +463,17 @@ class unitTest_webBrowser extends unitTest_webContext {
   
   function source () {
     return $this->context->getPageSource();
+  }
+
+  function hasError () {
+    return strpos($this->source(), 'error-hmnb9a525V77pG545SXkqmfW') !== false;
+  }
+  
+  function errorMessage () {
+    if (!$this->hasError())
+      return 'no error';
+    $result = preg_match('/error-hmnb9a525V77pG545SXkqmfW\:\s*"((\\\\"|[^\"])+)"/', $this->source(), $match);
+    return $result > 0 ? $match[1] : 'unknown error';
   }
 
 }
