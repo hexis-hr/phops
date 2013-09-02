@@ -438,3 +438,8 @@ function postToURL ($url, $postData, $timeout = 3000) {
   return curl_exec($curl);
 }
 
+function timestampSignature () {
+  $dateTime = new DateTime();
+  $dateTime->setTimezone(new DateTimeZone('UTC'));
+  return $dateTime->format('[Y-m-d H:i:s]');
+}
