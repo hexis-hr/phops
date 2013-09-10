@@ -44,7 +44,10 @@ function toString ($value) {
 function sum () {
   $result = 0;
   foreach (func_get_args() as $argument)
-    $result += $argument;
+    if (is_array($argument))
+      $result += call_user_func_array('sum', $argument);
+    else
+      $result += $argument;
   return $result;
 }
 

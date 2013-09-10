@@ -17,6 +17,9 @@ if (isset($_SERVER['environment_configuration']) && $_SERVER['environment_config
 if (!isset($_SERVER['environment']))
   $_SERVER['environment'] = 'development';
 
+if (!array_key_exists('profile_enabled', $_SERVER))
+  $_SERVER['profile_enabled'] = $_SERVER['environment'] == 'development';
+
 if (!isset($_SERVER['baseHostname']) && isset($_SERVER['HTTP_HOST']))
   $_SERVER['baseHostname'] = $_SERVER['HTTP_HOST'];
 
@@ -63,6 +66,7 @@ define("version_cache", $_SERVER['environment'] == 'production' || $_SERVER['env
   || $_SERVER['environment'] == 'unittest');
 define("version_test", $_SERVER['environment'] == 'test' || $_SERVER['environment'] == 'unittest');
 define("version_development", $_SERVER['environment'] == 'development' || $_SERVER['environment'] == 'design');
+define("version_profile", $_SERVER['profile_enabled']);
 define("version_design", $_SERVER['environment'] == 'design');
 define("version_functional", $_SERVER['environment'] != 'design');
 define("version_production", $_SERVER['environment'] == 'production');

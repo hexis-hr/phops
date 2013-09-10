@@ -16,6 +16,7 @@ function finally_ ($try, $finally) {
 
 class scopeExit {
   function __construct ($callback) {
+    assertTrue(false);
     $this->callback = $callback;
   }
   function __destruct () {
@@ -25,21 +26,21 @@ class scopeExit {
 }
 
 function function_alias ($original, $alias) {
-  
+
   $args = func_get_args();
   assert('count($args) == 2', 'function_alias(): requires exactly two arguments');
   assert('is_string($original) && is_string($alias)', 'function_alias(): requires string arguments');
-  
+
   // valid function name - http://php.net/manual/en/functions.user-defined.php
   assert('preg_match(\'/^[a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*$/\', $original) > 0',
     "function_alias(): '$original' is not a valid function name");
   assert('preg_match(\'/^[a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*$/\', $alias) > 0',
     "function_alias(): '$alias' is not a valid function name");
-  
+
   $aliasNamespace = substr($alias, 0, strrpos($alias, '\\') !== false ? strrpos($alias, '\\') : 0);
   $aliasName = substr($alias, strrpos($alias, '\\') !== false ? strrpos($alias, '\\') + 1 : 0);
   $serializedOriginal = var_export($original, true);
-  
+
   eval("
     namespace $aliasNamespace {
       function $aliasName () {
@@ -47,7 +48,7 @@ function function_alias ($original, $alias) {
       }
     }
   ");
-  
+
 }
 
 function import_namespace ($source, $destination) {
@@ -55,7 +56,7 @@ function import_namespace ($source, $destination) {
   $args = func_get_args();
   assert('count($args) == 2', 'import_namespace(): requires exactly two arguments');
   assert('is_string($source) && is_string($destination)', 'import_namespace(): requires string arguments');
-  
+
   // valid function name - http://php.net/manual/en/functions.user-defined.php
   assert('preg_match(\'/^([a-zA-Z_\x7f-\xff][\\\\\\\\a-zA-Z0-9_\x7f-\xff]*)?$/\', $source) > 0',
     "import_namespace(): '$destination' is not a valid namespace name");
@@ -132,10 +133,10 @@ function generateRandomUnit () {
 }
 
 function generateRandomStructure ($size) {
-  
+
   if ($size == 1)
     return generateRandomUnit();
-  
+
   if (rand(0, 1) == 0) {
     $result = array();
     while ($size > 0) {
@@ -151,7 +152,7 @@ function generateRandomStructure ($size) {
       $size -= $subSize;
     }
   }
-  
+
   return $result;
 }
 
@@ -398,7 +399,7 @@ function _unflatten (&$result, $key, $value, $delimiter = '_') {
       }
     }
   }
-  
+
   if (is_array($result))
     $stack[0][end($keyParts)] = $value;
   else

@@ -19,18 +19,19 @@ restore_include_path();
 set_include_path('.' . PATH_SEPARATOR . $newIncludePaths . PATH_SEPARATOR . get_include_path());
 
 // no code is run, only definitions
-require_once(dirname(__FILE__) . '/functions.php');
-require_once(dirname(__FILE__) . '/overload.php');
-require_once(dirname(__FILE__) . '/traits.php');
-require_once(dirname(__FILE__) . '/mail.php');
-require_once(dirname(__FILE__) . '/safety.php');
-require_once(dirname(__FILE__) . '/context.php');
-require_once(dirname(__FILE__) . '/index.php');
-require_once(dirname(__FILE__) . '/cache.php');
-require_once(dirname(__FILE__) . '/setup.php');
-require_once(dirname(__FILE__) . '/unit-test.php');
 require_once(dirname(__FILE__) . '/activity.php');
+require_once(dirname(__FILE__) . '/cache.php');
+require_once(dirname(__FILE__) . '/context.php');
+require_once(dirname(__FILE__) . '/functions.php');
+require_once(dirname(__FILE__) . '/index.php');
+require_once(dirname(__FILE__) . '/mail.php');
+require_once(dirname(__FILE__) . '/overload.php');
+require_once(dirname(__FILE__) . '/profile.php');
+require_once(dirname(__FILE__) . '/safety.php');
+require_once(dirname(__FILE__) . '/setup.php');
 require_once(dirname(__FILE__) . '/stub.php');
+require_once(dirname(__FILE__) . '/traits.php');
+require_once(dirname(__FILE__) . '/unit-test.php');
 
 // initialize
 require_once(dirname(__FILE__) . '/environment.php');
