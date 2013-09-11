@@ -47,6 +47,8 @@ function isImplicitlyConvertible ($from, $to) {
 function isString ($value) {
   if (is_string($value))
     return true;
+  if (is_scalar($value))
+    return false;
   if (hasMember($value, 'isString')) {
     $result = opAccess($value, 'isString');
     version_assert and assertTrue(is_bool($result));
