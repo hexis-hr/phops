@@ -24,6 +24,8 @@ function codeTimestamp () {
   if (isset($timestamp) && count($includedFiles) == count($newIncludedFiles))
     return $timestamp;
   foreach (array_diff($newIncludedFiles, $includedFiles) as $includedFile) {
+    if (!is_file($includedFile))
+      continue;
     $mtime = filemtime($includedFile);
     if (!isset($timestamp) || $mtime > $timestamp)
       $timestamp = $mtime;
