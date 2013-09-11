@@ -33,16 +33,16 @@ function profileStopwatches () {
             $columnWidths[$columnWidthIndex] = max($columnWidth, strlen($summaryEntry[$columnWidthIndex]));
 
         $output = '';
-        
+
         if (array_key_exists('HTTP_HOST', $_SERVER) && array_key_exists('REQUEST_URI', $_SERVER))
           $output .= 'url: ' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 'https' : 'http')
             . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}\n";
-        
-        $output .= 'codeBaseTimestamp: ' . codeBaseTimestamp() . "\n";
-        $output .= 'codeBaseChanged: ' . (codeBaseChanged() ? 'true' : 'false') . "\n";
-        $output .= 'staticCacheExpired: ' . (staticCacheExpired() ? 'true' : 'false') . "\n";
+
+        $output .= 'codeTimestamp: ' . codeTimestamp() . "\n";
+        $output .= 'codeChanged: ' . (codeChanged() ? 'true' : 'false') . "\n";
+        $output .= 'staticCacheExpired: ' . (staticCacheExpired('profile') ? 'true' : 'false') . "\n";
         $output .= "\n";
-        
+
         foreach ($summary as $summaryIndex => $summaryEntry) {
           if ($summaryIndex == 1) {
             $columns = array();

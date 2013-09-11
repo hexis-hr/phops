@@ -12,7 +12,12 @@ function persistentIndex ($callback, $file = __FILE__, $line = __LINE__) {
   assertTrue(false);
 }
 
+// back-compatibility function
 function codeBaseTimestamp () {
+  return codeTimestamp();
+}
+
+function codeTimestamp () {
   static $includedFiles = array();
   static $timestamp = null;
   $newIncludedFiles = get_included_files();
@@ -27,13 +32,18 @@ function codeBaseTimestamp () {
   return $timestamp;
 }
 
+// back-compatibility function
 function codeBaseChanged () {
+  return codeChanged();
+}
+
+function codeChanged () {
   static $includedFiles = array();
   static $result = true;
   $newIncludedFiles = get_included_files();
   if (count($includedFiles) != count($newIncludedFiles)) {
     $fingerprintFile = $_SERVER['cachePath'] . '/codeBase_' . sha1(serialize(get_included_files())) . '.timestamp';
-    $result = !is_file($fingerprintFile) || codeBaseTimestamp() > filemtime($fingerprintFile);
+    $result = !is_file($fingerprintFile) || codeTimestamp() > filemtime($fingerprintFile);
     if ($result) {
       directory(dirname($fingerprintFile));
       $touchResult = touch($fingerprintFile);
@@ -43,6 +53,34 @@ function codeBaseChanged () {
   }
   return $result;
 }
+
+/*
+function codeIncludes ($path = null) {
+
+  static $paths = array();
+  static $pathsCacheCount = 0;
+  static $filesCache = array();
+
+
+  if (!isset($path)) {
+    if ($pathsCacheCount != count($paths)) {
+      version_profile and profileStopwatch('codeIncludes(): list files')->start();
+      $filesCache = array();
+      foreach ($paths as $path)
+        if (is_file($path))
+          $filesCache[] = $path;
+        else if (is_dir($path))
+          foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $file)
+            $filesCache[] = (string) $file;
+      $pathsCacheCount = count($paths);
+      version_profile and profileStopwatch('codeIncludes(): list files')->stop();
+    }
+    return array_merge(get_included_files(), $filesCache);
+  }
+
+  $paths[] = $path;
+}
+/**/
 
 // back-compatibility function
 // staticIndex($file, $line, [$key,] $callback)

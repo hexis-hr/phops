@@ -6,24 +6,50 @@
  *
  */
 
-function staticCacheExpired () {
+/**
+ * Static cache that is older than this timestamp is considered expired.
+ */
+function lastCodeChangeTimestamp () {
 
-  static $resultCache = false;
+  static $resultCache = 0;
   static $resultCacheSet = false;
 
-  if ($resultCacheSet)
-    return $resultCache;
+  $timestampFile = $_SERVER['cachePath'] . '/lastCodeChangeTimestamp';
 
-  $timestampFile = $_SERVER['cachePath'] . '/staticCacheTimestamp';
-  $resultCache = (!is_file($timestampFile) || microtime(true) > filemtime($timestampFile) + 2) && codeBaseChanged();
-  $resultCacheSet = true;
+  if (!$resultCacheSet) {
 
-  directory(dirname($timestampFile));
-  $touchResult = touch($timestampFile);
-  enforce($touchResult, "Could not touch '$timestampFile'");
+    if (!is_file($timestampFile) || microtime(true) > filemtime($timestampFile) + 2)
+      file_put_contents($timestampFile, codeTimestamp());
+
+    $resultCache = file_get_contents($timestampFile);
+    enforce($resultCache !== false, "Could not read '$timestampFile'");
+    $resultCache = (float) $resultCache;
+
+    $resultCacheSet = true;
+  }
 
   return $resultCache;
 }
+
+
+function staticCacheExpired ($key) {
+
+  static $resultCache = array();
+
+  if (!array_key_exists($key, $resultCache)) {
+
+    $timestampFile = $_SERVER['cachePath'] . '/staticCacheExpired_' . sha1($key) . '.timestamp';
+    $resultCache[$key] = !is_file($timestampFile) || filemtime($timestampFile) < lastCodeChangeTimestamp();
+
+    directory(dirname($timestampFile));
+    $touchResult = touch($timestampFile);
+    enforce($touchResult, "Could not touch '$timestampFile'");
+
+  }
+
+  return $resultCache[$key];
+}
+
 
 // staticCache($file, $line, [$key,] $callback)
 function staticCache ($file, $line, $key, $callback = null) {
@@ -43,7 +69,7 @@ function staticCache ($file, $line, $key, $callback = null) {
   $cacheFile = $_SERVER['cachePath'] . '/' . substr(pathinfo($file, PATHINFO_FILENAME), 0, 10) . '__'
     . substr(preg_replace('/(?i)[^a-z0-9]+/', '', $key), 0, 10) . '__' . sha1("$file:$line-$key") . '.cache';
 
-  if (!is_file($cacheFile) || (version_development && staticCacheExpired())) {
+  if (!is_file($cacheFile) || (version_development && filemtime($cacheFile) < lastCodeChangeTimestamp())) {
     directory(dirname($cacheFile));
     file_put_contents($cacheFile, serialize($callback()));
   }
