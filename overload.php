@@ -53,15 +53,15 @@ function sum () {
 
 function opConcat () {
   $arguments = func_get_args();
-  
+
   version_assert and assertTrue(count($arguments) >= 1);
   $result = $arguments[0];
-    
+
   foreach (array_slice($arguments, 1) as $argument) {
     if (is_object($result) && hasMember($result, 'opConcat'))
       $result = $result->opConcat($argument);
-    else if (is_object($argument) && hasMember($argument, 'opConcat'))
-      $result = $argument->opConcat($result);
+    else if (is_object($argument) && hasMember($argument, 'opConcatRight'))
+      $result = $argument->opConcatRight($result);
     else if (is_array($argument)) {
       version_assert and assertTrue(is_array($result) && is_array($argument));
       $result = array_merge($result, $argument);
@@ -70,7 +70,7 @@ function opConcat () {
       $result = toRaw($result) . toRaw($argument);
     }
   }
-  
+
   return $result;
 }
 

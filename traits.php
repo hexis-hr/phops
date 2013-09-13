@@ -7,9 +7,9 @@
  */
 
 function allMembers ($entity) {
-  
+
   $result = array();
-  
+
   if (is_array($entity)) {
     return array_keys($entity);
   } else if (is_object($entity)) {
@@ -25,7 +25,7 @@ function allMembers ($entity) {
 
 function hasMember ($entity, $member) {
   version_assert and assertTrue(is_string($member));
-  
+
   if (is_array($entity))
     return array_key_exists($member, $entity);
   else if (is_object($entity) && method_exists($entity, 'hasMember'))
@@ -36,7 +36,7 @@ function hasMember ($entity, $member) {
     return property_exists($entity, $member) || method_exists($entity, $member);
   else
     assertTrue(false);
-  
+
 }
 
 function isImplicitlyConvertible ($from, $to) {
@@ -63,5 +63,13 @@ function isInteger ($value) {
 
 function isIterable ($value) {
   return is_array($value) || $value instanceof Iterator;
+}
+
+function baseType ($value) {
+  if (isString($value))
+    return 'string';
+  if (isInteger($value))
+    return 'integer';
+  return 'object';
 }
 
