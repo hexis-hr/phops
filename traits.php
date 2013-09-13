@@ -45,6 +45,8 @@ function isImplicitlyConvertible ($from, $to) {
 }
 
 function isString ($value) {
+  if ($value === null)
+    return false;
   if (is_string($value))
     return true;
   if (is_scalar($value))
