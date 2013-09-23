@@ -83,25 +83,23 @@ function shutdown_error_handler () {
   $error = error_get_last();
   if (isset($error)) {
     $error = (object) $error;
-    
+
     // $error->type != E_WARNING is a workaround for error_get_last() being set even
     // if error has been handled by exception_error_handler - php bug ?
     if ($error->type == E_WARNING)
       return;
-    
+
     // checking 'Uncaught exception ' is a workaround for error_get_last() being set even
     // if exception has been handled by set_exception_handler - php bug ?
     if (substr($error->message, 0, strlen('Uncaught exception ')) == 'Uncaught exception ')
       return;
-    
+
     uncaught_exception_handler(new phpShutdownError("PHP shutdown error", 0,
       new ErrorException($error->message, 0, $error->type, $error->file, $error->line)));
   }
 }
 
 function uncaught_exception_handler ($e) {
-  // todo: move to a more proper location
-  echo '<!-- error-hmnb9a525V77pG545SXkqmfW: ' . json_encode(exception_to_stdclass($e)->message) . ' -->';
   // todo: nice cli exception render
   if (php_sapi_name() == "cli")
     echo $e;
@@ -114,28 +112,28 @@ function uncaught_exception_handler ($e) {
 function error_report ($e) {
 
   $exception = exception_to_stdclass($e);
-  
+
   if (!session_id() && !headers_sent())
     session_start();
-  
+
   $report = (object) array();
-  
+
   $file = str_replace(array('\\', '/'), array('/', '/'), $exception->file);
   if (isset($_SERVER['SCRIPT_FILENAME']))
     $baseCodePath = str_replace(array('\\', '/'), array('/', '/'), realpath(dirname($_SERVER['SCRIPT_FILENAME'])));
-  
+
   if (is_file($file)) {
     $fileContent = file_get_contents($file);
     $codeSnippetBeginLine = $exception->line - 10 >= 0 ? $exception->line - 10 : 0;
     $codeSnippetLines = array_slice(explode("\n", $fileContent), $codeSnippetBeginLine, 20);
     $codeSnippet = implode("\n", $codeSnippetLines);
   }
-  
+
   $report->time = microtime(true);
-  
+
   if (isset($_SERVER['project']))
     $report->project = $_SERVER['project'];
-  
+
   $report->serverInformation = (object) array();
   $report->serverInformation->uname = php_uname();
   if (function_exists('gethostname'))
@@ -154,12 +152,12 @@ function error_report ($e) {
     $report->request->id = $_SERVER['requestId'];
   if (session_id())
     $report->request->session = session_id();
-  
+
   $report->exception = $exception;
-  
+
   if (isset($report->exception->digest))
     $report->digest = $report->exception->digest;
-  
+
   $code = $report->exception;
   foreach (array_merge(array($report->exception), $report->exception->trace) as $traceItem) {
     if (!$traceItem->isLibrary) {
@@ -177,9 +175,9 @@ function error_report ($e) {
     $report->code->line = $code->line;
   if (isset($code->snippet))
     $report->code->snippet = $code->snippet;
-  
+
   $report->rawData = (object) array();
-  
+
   if (php_sapi_name() != "cli") {
     if (isset($_GET))
       $report->rawData->get = $_GET;
@@ -198,9 +196,9 @@ function error_report ($e) {
   $report->additional = (object) array();
   foreach (safety_additional_data() as $name => $value)
     $report->additional->$name = $value;
-  
+
   return $report;
-  
+
 }
 
 function safety_additional_data () {
@@ -238,10 +236,10 @@ function exception_to_stdclass ($exception) {
   if (isset($exception->digest))
     $rawException->digest = $exception->digest;
   $rawException->trace = $exception->getTrace();
-  
+
   foreach ($rawException->trace as $traceIndex => $traceItem) {
     $traceItem = (object) $traceItem;
-    
+
     $args = array();
     if (isset($traceItem->args))
       foreach ($traceItem->args as $argumentIndex => $argument) {
@@ -257,7 +255,7 @@ function exception_to_stdclass ($exception) {
       }
     unset($traceItem->args);
     $traceItem->arguments = $args;
-    
+
     if (isset($traceItem->file))
       $traceItem->file = str_replace(array('\\', '/'), array('/', '/'), $traceItem->file);
 
@@ -272,7 +270,7 @@ function exception_to_stdclass ($exception) {
         if (substr($traceItem->file, 0, strlen($cleanPath . '/')) == $cleanPath . '/')
           $traceItem->isLibrary = true;
       }
-    
+
     if (isset($traceItem->file, $traceItem->line) && is_file($traceItem->file))
       $traceItem->snippet = extract_code_snippet($traceItem->file, $traceItem->line);
 
@@ -283,9 +281,9 @@ function exception_to_stdclass ($exception) {
     $rawException->previous = exception_to_stdclass($exception->getPrevious());
     $rawException->previous->next = $rawException;
   }
-  
+
   $rawException->stringOf = (string) $exception;
-  
+
   return $rawException;
 }
 
@@ -299,14 +297,14 @@ function extract_code_snippet ($file, $line) {
 function render_error_report ($report) {
 
   ob_start();
-  
+
   echo '<div>';
 
   if (isset($report->title))
     echo "<h1>" . (isset($report->title) ? htmlspecialchars($report->title) : '(no title)') . "</h1>";
-  
+
   //echo '<button onclick="jQuery(\'.extra-information\').show();">Show everything</button>';
-  
+
   echo "<h1>General info</h1>";
   echo "<pre>";
   ob_start();
@@ -343,7 +341,7 @@ function render_error_report ($report) {
   }
   echo htmlspecialchars(ob_get_clean());
   echo "</pre>";
-  
+
   echo "<h1>Trace</h1>";
   echo render_exception($report->exception);
   /*
@@ -357,7 +355,7 @@ function render_error_report ($report) {
       . (isset($traceItem->file) ? htmlspecialchars($traceItem->file . ':' . $traceItem->line) : '[internal function]')
       . '</a>';
     echo '<div class="' . $traceItemId . '" style="' . (!$isLibrary && $firstItem ? '' : 'display: none;') . '">';
-    
+
     echo "<pre><h2>";
     ob_start();
     if (isset($traceItem->{'function'})) {
@@ -387,13 +385,13 @@ function render_error_report ($report) {
 
     if (!$isLibrary && $firstItem)
       $problemTraceItem = $traceItem;
-    
+
     if (!$isLibrary)
       $firstItem = false;
   }
   echo "</ul>";
   /**/
-  
+
   if (isset($report->debug)) {
     echo "<h1>Debug</h1>";
     echo '<ul>';
@@ -416,7 +414,7 @@ function render_error_report ($report) {
     }
     echo '</ul>';
   }
-  
+
   if (isset($report->rawData->get)) {
     echo "<h1>GET</h1>";
     echo "<pre>";
@@ -425,7 +423,7 @@ function render_error_report ($report) {
     echo htmlspecialchars(ob_get_clean());
     echo "</pre>";
   }
-  
+
   if (isset($report->rawData->post)) {
     echo "<h1>POST</h1>";
     echo "<pre>";
@@ -434,7 +432,7 @@ function render_error_report ($report) {
     echo htmlspecialchars(ob_get_clean());
     echo "</pre>";
   }
-  
+
   if (isset($report->rawData->session)) {
     echo "<h1>SESSION</h1>";
     echo "<pre>";
@@ -443,7 +441,7 @@ function render_error_report ($report) {
     echo htmlspecialchars(ob_get_clean());
     echo "</pre>";
   }
-  
+
   if (isset($report->rawData->cookie)) {
     echo "<h1>COOKIE</h1>";
     echo "<pre>";
@@ -452,7 +450,7 @@ function render_error_report ($report) {
     echo htmlspecialchars(ob_get_clean());
     echo "</pre>";
   }
-  
+
   if (isset($report->additional->request)) {
     echo "<h1>Request</h1>";
     echo "<pre>";
@@ -461,7 +459,7 @@ function render_error_report ($report) {
     echo htmlspecialchars(ob_get_clean());
     echo "</pre>";
   }
-  
+
   if (isset($report->additional->parameters)) {
     echo "<h1>Parameters</h1>";
     echo "<pre>";
@@ -500,18 +498,20 @@ function render_error_report ($report) {
     echo "Base code path: " . $report->code->basePath . "\r\n";
   echo htmlspecialchars(ob_get_clean());
   echo "</pre>";
-  
+
   echo '</div>';
 
   return ob_get_clean();
 }
 
 function render_exception ($e) {
-  
+
   $e = exception_to_stdclass($e);
 
   ob_start();
-  
+
+  echo '<!-- error-hmnb9a525V77pG545SXkqmfW: ' . json_encode($e->message) . ' -->';
+
   echo '<div style=\'font-size: 1em; border: 2px solid black; padding: 5px; background: white;'
     . 'font-family: Consolas, Monaco, "Lucida Console", "Liberation Mono", "DejaVu Sans Mono", '
     . '"Bitstream Vera Sans Mono", "Courier New", monospace;\'>';
@@ -538,7 +538,7 @@ function render_exception ($e) {
         . (isset($traceItem->file) ? htmlspecialchars($traceItem->file . ':' . $traceItem->line)
         : '[internal function]') . '</a>';
       echo '<div class="' . $traceItemId . '" style="' . (!$isLibrary && $firstItem ? '' : 'display: none;') . '">';
-      
+
       echo "<pre><h2 style='font-size: 1.1em;'>";
       ob_start();
       if (isset($traceItem->{'function'})) {
@@ -556,8 +556,9 @@ function render_exception ($e) {
       if (isset($traceItem->snippet->content)) {
         echo '<pre class="snippet">';
         $lines = explode("\n", htmlspecialchars($traceItem->snippet->content));
-        $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] = "<strong style='color: red;'>"
-          . rtrim($lines[$traceItem->line - $traceItem->snippet->beginLine - 1]) . "</strong>";
+        if (array_key_exists($traceItem->line - $traceItem->snippet->beginLine - 1, $lines))
+          $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] = "<strong style='color: red;'>"
+            . rtrim($lines[$traceItem->line - $traceItem->snippet->beginLine - 1]) . "</strong>";
         foreach ($lines as $lineIndex => $lineContent) {
           $lineNumber = $traceItem->snippet->beginLine + $lineIndex + 1;
           $lines[$lineIndex] = str_pad($lineNumber, strlen($traceItem->snippet->beginLine) + 1,
@@ -571,22 +572,22 @@ function render_exception ($e) {
 
       if (!$isLibrary && $firstItem)
         $problemTraceItem = $traceItem;
-      
+
       if (!$isLibrary)
         $firstItem = false;
     }
     echo "</ul>";
-    
+
     $exceptions[] = ob_get_clean();
-  
+
     if (isset($e->previous)) {
       $e = $e->previous;
       continue;
     }
-  
+
     break;
   }
-  
+
   echo implode('<hr />', $exceptions);
 
   echo '</div>';
