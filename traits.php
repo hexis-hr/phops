@@ -34,6 +34,8 @@ function hasMember ($entity, $member) {
   //  return $entity->opDispatch($member) !== null;
   else if (is_string($entity) || is_object($entity))
     return property_exists($entity, $member) || method_exists($entity, $member);
+  else if ($entity === null || is_scalar($entity))
+    return false;
   else
     assertTrue(false);
 
