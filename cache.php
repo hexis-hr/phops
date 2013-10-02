@@ -19,7 +19,7 @@ function lastCodeChangeTimestamp () {
 
   if (!$resultCacheSet) {
 
-    if (!is_file($timestampFile) || microtime(true) > filemtime($timestampFile) + 2) {
+    if (!is_file($timestampFile) || (version_development && microtime(true) > filemtime($timestampFile) + 2)) {
 
       file_put_contents($timestampFile, codeTimestamp());
 
@@ -39,6 +39,9 @@ function lastCodeChangeTimestamp () {
 
 
 function staticCacheExpired ($key) {
+
+  if (!version_development)
+    return false;
 
   static $resultCache = array();
 
@@ -76,7 +79,7 @@ function staticCache ($file, $line, $key, $callback = null) {
     . substr(preg_replace('/(?i)[^a-z0-9]+/', '', $key), 0, 10) . '__' . sha1("$file:$line-$key") . '.cache';
   $cacheCorrelationFile = "$cacheFile.correlation";
 
-  if (is_file($cacheCorrelationFile))
+  if (version_development && is_file($cacheCorrelationFile))
     foreach (array_diff(unserialize(file_get_contents($cacheCorrelationFile)), includedFile()) as $file)
       includedFile($file);
 
