@@ -20,7 +20,7 @@ function codeBaseTimestamp () {
 function codeTimestamp () {
   static $includedFiles = array();
   static $timestamp = null;
-  $newIncludedFiles = get_included_files();
+  $newIncludedFiles = includedFile();
   if (isset($timestamp) && count($includedFiles) == count($newIncludedFiles))
     return $timestamp;
   foreach (array_diff($newIncludedFiles, $includedFiles) as $includedFile) {
@@ -42,9 +42,9 @@ function codeBaseChanged () {
 function codeChanged () {
   static $includedFiles = array();
   static $result = true;
-  $newIncludedFiles = get_included_files();
+  $newIncludedFiles = includedFile();
   if (count($includedFiles) != count($newIncludedFiles)) {
-    $fingerprintFile = $_SERVER['cachePath'] . '/codeBase_' . sha1(serialize(get_included_files())) . '.timestamp';
+    $fingerprintFile = $_SERVER['cachePath'] . '/codeBase_' . sha1(serialize($newIncludedFiles)) . '.timestamp';
     $result = !is_file($fingerprintFile) || codeTimestamp() > filemtime($fingerprintFile);
     if ($result) {
       directory(dirname($fingerprintFile));
@@ -54,6 +54,15 @@ function codeChanged () {
     $includedFiles = $newIncludedFiles;
   }
   return $result;
+}
+
+function includedFile ($file = null) {
+  static $files = array();
+  if ($file === null)
+    return array_unique(array_merge(get_included_files(), $files));
+  version_assert and assertTrue(is_string($file));
+  version_assert and assertTrue(is_file($file));
+  $files[] = realpath($file);
 }
 
 /*

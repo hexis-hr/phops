@@ -15,20 +15,26 @@ function lastCodeChangeTimestamp () {
   static $resultCacheSet = false;
 
   $timestampFile = $_SERVER['cachePath'] . '/lastCodeChangeTimestamp';
+  $correlationFile = "$timestampFile.correlation";
 
   if (!$resultCacheSet) {
 
-    if (!is_file($timestampFile) || microtime(true) > filemtime($timestampFile) + 2)
+    if (!is_file($timestampFile) || microtime(true) > filemtime($timestampFile) + 2) {
+
       file_put_contents($timestampFile, codeTimestamp());
 
-    $resultCache = file_get_contents($timestampFile);
-    enforce($resultCache !== false, "Could not read '$timestampFile'");
-    $resultCache = (float) $resultCache;
+    } else {
+
+      $resultCache = file_get_contents($timestampFile);
+      enforce($resultCache !== false, "Could not read '$timestampFile'");
+      $resultCache = (float) $resultCache;
+
+    }
 
     $resultCacheSet = true;
   }
 
-  return $resultCache;
+  return $resultCache > 1 ? $resultCache : codeTimestamp();
 }
 
 
@@ -68,10 +74,16 @@ function staticCache ($file, $line, $key, $callback = null) {
 
   $cacheFile = $_SERVER['cachePath'] . '/' . substr(pathinfo($file, PATHINFO_FILENAME), 0, 10) . '__'
     . substr(preg_replace('/(?i)[^a-z0-9]+/', '', $key), 0, 10) . '__' . sha1("$file:$line-$key") . '.cache';
+  $cacheCorrelationFile = "$cacheFile.correlation";
+
+  if (is_file($cacheCorrelationFile))
+    foreach (array_diff(unserialize(file_get_contents($cacheCorrelationFile)), includedFile()) as $file)
+      includedFile($file);
 
   if (!is_file($cacheFile) || (version_development && filemtime($cacheFile) < lastCodeChangeTimestamp())) {
     directory(dirname($cacheFile));
     file_put_contents($cacheFile, serialize($callback()));
+    file_put_contents($cacheCorrelationFile, serialize(includedFile()));
   }
 
   $map->{"$file:$line-$key"} = unserialize(file_get_contents($cacheFile));
