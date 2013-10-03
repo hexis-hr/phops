@@ -81,7 +81,8 @@ function staticCache ($file, $line, $key, $callback = null) {
 
   if (version_development && is_file($cacheCorrelationFile))
     foreach (array_diff(unserialize(file_get_contents($cacheCorrelationFile)), includedFile()) as $file)
-      includedFile($file);
+      if (is_file($file))
+        includedFile($file);
 
   if (!is_file($cacheFile) || (version_development && filemtime($cacheFile) < lastCodeChangeTimestamp())) {
     directory(dirname($cacheFile));
