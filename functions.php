@@ -342,14 +342,46 @@ function recursive_merge () {
           $destination->$key = isset($destination->$key) && (is_object($value) || is_array($value))
             ? recursive_merge($destination->$key, $value) : $value;
         else if (is_array($destination))
-          $destination[$key] = isset($destination[$key]) && (is_object($value) || is_array($value))
-            ? recursive_merge($destination[$key], $value) : $value;
+          if (is_int($key))
+            $destination[] = $value;
+          else
+            $destination[$key] = isset($destination[$key]) && (is_object($value) || is_array($value))
+              ? recursive_merge($destination[$key], $value) : $value;
         else
           assertTrue(false);
       }
   }
 
   return $destination;
+}
+
+function unittest_recursive_merge () {
+
+  $array1 = array(
+    'properties' => array(
+      'a' => 1,
+      'b' => 2,
+    ),
+    'list' => array(
+      'a',
+      'b',
+    ),
+  );
+  $array2 = array(
+    'properties' => array(
+      'b' => 3,
+      'c' => 4,
+    ),
+    'list' => array(
+      'c',
+      'd',
+    ),
+  );
+  $merged = recursive_merge($array1, $array2);
+  assertTrue(count($merged) === 2);
+  assertTrue(count($merged['properties']) === 3);
+  assertTrue(count($merged['list']) === 4);
+
 }
 
 function flatten ($subject, $delimiter = '_') {
