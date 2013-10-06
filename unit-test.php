@@ -19,7 +19,7 @@ function runUnitTests () {
     if (isset($_SERVER['unitTest_result']))
       file_put_contents($_SERVER['unitTest_result'], json_encode($result) . "\n");
   };
-  
+
   $flushResult();
 
   $timestamp = microtime(true);
@@ -52,7 +52,7 @@ function runUnitTests () {
       $timestamp = microtime(true);
       echo '.';
     }
-    
+
     if ($isExcluded($file))
       continue;
 
@@ -64,23 +64,23 @@ function runUnitTests () {
     }
 
   }
-  
+
   echo ' ' . count($files) . "\n";
 
   usort($files, function ($lhs, $rhs) {
     return filemtime($rhs) - filemtime($lhs);
   });
-  
+
   echo 'Including files ..';
   $i = 0;
-  
+
   // php include can overwrite variable values so we need to isolate include in a function
   $includeFile = function ($file) {
     ob_start();
     include_once (string) $file;
     ob_end_clean();
   };
-  
+
   foreach ($files as $file) {
     if (microtime(true) > $timestamp + 1) {
       $timestamp = microtime(true);
@@ -92,9 +92,9 @@ function runUnitTests () {
     $includeFile($file);
   }
   echo ' ' . $i . "\n";
-  
+
   $tests = array();
-  
+
   echo 'Listing tests ..';
   $functions = get_defined_functions();
   foreach (array_merge($functions['internal'], $functions['user']) as $function) {
@@ -105,7 +105,7 @@ function runUnitTests () {
     if (substr(strtolower($function), 0, 8) == 'unittest')
       $tests[] = $function;
   }
-  
+
   foreach (get_declared_classes() as $class) {
     foreach (get_class_methods($class) as $method) {
       if (microtime(true) > $timestamp + 1) {
@@ -126,9 +126,9 @@ function runUnitTests () {
         $tests[] = array($class, $method);
     }
   }
-  
+
   echo ' ' . count($tests) . "\n";
-  
+
   $result->tests = (object) array(
     'count' => count($tests),
     'all' => array(),
@@ -142,16 +142,16 @@ function runUnitTests () {
     $rhsReflection = is_string($rhs) ? new ReflectionFunction($rhs) : new ReflectionMethod($rhs[0], $rhs[1]);
     return filemtime($rhsReflection->getFileName()) - filemtime($lhsReflection->getFileName());
   });
-  
+
   echo "\nRunning " . count($tests) . " tests:\n";
-  
+
   foreach ($tests as $key => $test) {
     $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
     $result->tests->all[$id] = (object) array('status' => 'unknown');
   }
-  
+
   $flushResult();
-  
+
   do {
     $unhandledCount = count($tests);
     foreach ($tests as $key => $test) {
@@ -188,22 +188,22 @@ function runUnitTests () {
       $flushResult();
     }
   } while (count($tests) > 0 && count($tests) < $unhandledCount);
-  
+
   $flushResult();
-  
+
   echo "\nResults: \n";
   echo "  Total:   " . $result->tests->count . "\n";
   echo "  Success: " . count($result->tests->successes) . "\n";
   echo "  Failure: " . count($result->tests->failures) . "\n";
   echo "  Errors:  " . count($result->tests->errors) . "\n";
-  
+
   if (count($result->tests->successes) != $result->tests->count)
     echo "\nTests completed with failures, errors or skipped tests !\n\n";
   else
     echo "\nEverything completed successfully !\n\n";
-    
+
   echo "Done\n";
-  
+
 }
 
 function isUnitTestRun ($test, $set = null) {
@@ -238,14 +238,26 @@ class unitTest_webContext {
   function __get ($name) {
     return $this->element($name);
   }
-  
+
   function __set ($name, $value) {
     assertTrue(false);
   }
-  
+
   function element ($name) {
+    $element = $this->_element($name);
+    version_assert and assertTrue($element instanceof unitTest_element);
+    version_assert and $i = 0;
+    while ($element->hasAttribute('data-alias-this')) {
+      version_assert and $i++;
+      version_assert and assertTrue($i < 64, 'Infinite loop detected');
+      $element = $element->query('//*[@data-mangle="' . $element->attribute('data-alias-this')->value . '"]')->one();
+    }
+    return $element;
+  }
+
+  function _element ($name) {
     version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
-    
+
     $this->browser->synchronize();
 
     if (false) {
@@ -260,13 +272,13 @@ class unitTest_webContext {
       return $elements;
     }
     }
-    
+
     // temporary optimization
     $elements = $this->query('//*[@data-element="' . $name . '" or @name="' . $name . '"]');
     if (count($elements) == 1)
-      return $elements;
-    
-    
+      return $elements->one();
+
+
     if (true) {
 
     $allElements = $this->query('./*');
@@ -278,18 +290,19 @@ class unitTest_webContext {
           break;
         continue;
       }
-      return $elements;
+      version_assert and assertTrue(count($elements) === 1, 'found ' . count($elements) . " elements, 1 expected");
+      return $elements->one();
     }
-    
+
     }
-    
+
 
     assertTrue(false, "Undefined " . get_called_class() . "->$name");
   }
-  
+
   function hasElement ($name) {
     version_assert and assertTrue(preg_match('/(?i)^[a-z0-9_\-\[\]]+$/', $name) > 0, "'$name' is not a valid name");
-    
+
     $this->browser->synchronize();
 
     if (false) {
@@ -304,13 +317,13 @@ class unitTest_webContext {
       return true;
     }
     }
-    
+
     // temporary optimization
     $elements = $this->query('//*[@data-element="' . $name . '" or @name="' . $name . '"]');
     if (count($elements) == 1)
       return true;
-    
-    
+
+
     if (true) {
 
     $allElements = $this->query('./*');
@@ -324,9 +337,9 @@ class unitTest_webContext {
       }
       return true;
     }
-    
+
     }
-    
+
 
     return false;
   }
@@ -347,7 +360,7 @@ class unitTest_webContext {
     assertTrue(count($results) == 1, 'found ' . count($results) . ' results (1 expected)');
     return $results[0];
   }
-  
+
   function waitForQuery ($query) {
     $t = microtime(true);
     // todo: is 30 seconds too much ? or not enough ? or wait in some different way ?
@@ -378,7 +391,7 @@ class unitTest_webContext {
     //assertTrue(count($results) > 0, 'found ' . count($results) . ' results (more then 0 expected)');
     return $results;
   }
-  
+
   function waitForUnitTestElements ($id) {
     $this->waitForQuery("[data-unit-test-element=$id], [unit-test-element=$id]");
   }
@@ -391,7 +404,7 @@ class unitTest_webContext {
     assertTrue(!$this->browser->hasError(), 'Error in page: ' . $this->browser->errorMessage());
     return $this;
   }
-  
+
   function execute ($script, $arguments = array()) {
     foreach ($arguments as $key => $value)
       if (is_object($value) && $value instanceof unitTest_element)
@@ -401,7 +414,7 @@ class unitTest_webContext {
       . "arguments = arguments_BaU4UfAZJ7iYW2VmMwpDtpXK; ' + unescape('" . rawurlencode($script) . "') + '})()');";
     return $this->browser->context->executeScript($script, $arguments);
   }
-  
+
   function exists () {
     try {
       $this->_get_tag();
@@ -415,9 +428,9 @@ class unitTest_webContext {
 }
 
 class unitTest_webBrowser extends unitTest_webContext {
-  
+
   private $driver;
-  
+
   function __construct ($url) {
     try {
       $this->driver = new WebDriver($url, array(WebDriverCapabilityType::BROWSER_NAME => 'firefox'));
@@ -429,12 +442,12 @@ class unitTest_webBrowser extends unitTest_webContext {
     }
     $this->browser = $this;
   }
-  
+
   function __destruct () {
     if (isset($this->context))
       $this->context->close();
   }
-  
+
   function redirect ($url) {
     if (strpos($url, '://') == false) {
       enforce('unitTestEnvironmentException', isset($_SERVER['baseUrl']), "baseUrl not set");
@@ -456,11 +469,11 @@ class unitTest_webBrowser extends unitTest_webContext {
       return $self->execute('return typeof(waitForBrowser) == \'undefined\' || !waitForBrowser;');
     }, 'Browser synchronization timeout');
   }
-  
+
   function close () {
     $this->context->close();
   }
-  
+
   function source () {
     return $this->context->getPageSource();
   }
@@ -468,7 +481,7 @@ class unitTest_webBrowser extends unitTest_webContext {
   function hasError () {
     return strpos($this->source(), 'error-hmnb9a525V77pG545SXkqmfW') !== false;
   }
-  
+
   function errorMessage () {
     if (!$this->hasError())
       return 'no error';
@@ -479,7 +492,7 @@ class unitTest_webBrowser extends unitTest_webContext {
 }
 
 class unitTest_elements extends ArrayObject {
-  
+
   function query ($query) {
     $results = new unitTest_elements();
     foreach ($this as $queryElement)
@@ -487,7 +500,7 @@ class unitTest_elements extends ArrayObject {
         $results[] = $resultElement;
     return $results;
   }
-  
+
   function __call ($name, $arguments) {
     assertTrue(count($this) == 1);
     return call_user_func_array(array($this[0], $name), $arguments);
@@ -502,12 +515,12 @@ class unitTest_elements extends ArrayObject {
     assertTrue(count($this) == 1);
     return $this[0]->$name;
   }
-  
+
   function one () {
     assertTrue(count($this) == 1, 'found ' . count($this) . ' elements (1 expected)');
     return $this[0];
   }
-  
+
   function any () {
     return $this[0];
   }
@@ -517,33 +530,33 @@ class unitTest_elements extends ArrayObject {
 class unitTest_element extends unitTest_webContext {
 
   private $info;
-  
+
   function __construct ($browser, $context) {
     $this->browser = $browser;
     $this->context = $context;
     $this->info = (object) array();
   }
-  
+
   function __set ($name, $value) {
     $this->{'_set_' . $name}($value);
   }
-  
+
   function __get ($name) {
 
     if (method_exists($this, '_get_' . $name))
       return $this->{'_get_' . $name}();
-    
+
     return parent::__get($name);
   }
-  
+
   function _get_tag () {
     return $this->context->getTagName();
   }
-  
+
   function _get_text () {
     return $this->context->getText();
   }
-  
+
   function _set_value ($value) {
     $context = $this->context;
     $self = $this;
@@ -561,11 +574,15 @@ class unitTest_element extends unitTest_webContext {
   function _get_displayed () {
     return $this->context->isDisplayed();
   }
-  
+
+  function hasAttribute ($name) {
+    return $this->context->getAttribute($name) !== null;
+  }
+
   function attribute ($name) {
     return new unitTest_attribute($this->context->getAttribute($name));
   }
-  
+
   function select () {
     assertTrue($this->_get_tag() == 'option');
     $select = $this->queryOne('..');
@@ -575,7 +592,7 @@ class unitTest_element extends unitTest_webContext {
       $option->click();
     });
   }
-  
+
   function _ensureVisible ($f) {
     assertTrue(is_callable($f));
     if ($this->displayed) {
@@ -617,7 +634,7 @@ class unitTest_element extends unitTest_webContext {
     if (isset($e))
       throw $e;
   }
-  
+
   function moveTo () {
     $this->browser->context->moveto(array('element' => $this->context->getID()));
   }
@@ -631,7 +648,7 @@ class unitTest_attribute {
   function __construct ($value) {
     $this->value = $value;
   }
-  
+
   function __toString () {
     try {
       return $this->value;

@@ -47,6 +47,10 @@ function assertThrown ($throwable = 'safeException', $callback, $message = 'Asse
   assertTrue(false, $message);
 }
 
+function assertEqual ($lhs, $rhs) {
+  assertTrue($lhs === $rhs, 'Assertion failure: *' . debugDump($lhs) . '* === *' . debugDump($rhs) . '*');
+}
+
 // enforcement indicates a data error (caused by external input)
 // enforcements will never be compiled out
 // enforce ([$class,] $condition, $message);
