@@ -48,7 +48,7 @@ function assertThrown ($throwable = 'safeException', $callback, $message = 'Asse
 }
 
 function assertEqual ($lhs, $rhs) {
-  assertTrue($lhs === $rhs, 'Assertion failure: *' . debugDump($lhs) . '* === *' . debugDump($rhs) . '*');
+  assertTrue(opEquals($lhs, $rhs), 'Assertion failure: *' . debugDump($lhs) . '* === *' . debugDump($rhs) . '*');
 }
 
 // enforcement indicates a data error (caused by external input)
