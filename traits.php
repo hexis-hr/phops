@@ -7,6 +7,7 @@
  */
 
 function allMembers ($entity) {
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
 
   $result = array();
 
@@ -24,6 +25,7 @@ function allMembers ($entity) {
 }
 
 function hasMember ($entity, $member) {
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   version_assert and assertTrue(is_string($member));
 
   if (is_array($entity))
@@ -47,6 +49,7 @@ function isImplicitlyConvertible ($from, $to) {
 }
 
 function isString ($value) {
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   if ($value === null)
     return false;
   if (is_string($value))

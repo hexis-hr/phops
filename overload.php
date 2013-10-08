@@ -8,6 +8,7 @@
 
 function _toCorrectClass ($object) {
   version_assert and assertTrue(count(func_get_args()) == 1);
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   version_assert and assertTrue(is_object($object));
   if (get_class($object) != 'stdClass')
     return $object;
@@ -18,6 +19,7 @@ function _toCorrectClass ($object) {
 
 function toRaw ($value) {
   version_assert and assertTrue(count(func_get_args()) == 1);
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   if (is_object($value) && hasMember($value, 'toRaw'))
     return $value->toRaw();
   else
@@ -26,6 +28,7 @@ function toRaw ($value) {
 
 function toString ($value) {
   version_assert and assertTrue(count(func_get_args()) == 1);
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   if (is_object($value))
     $value = _toCorrectClass($value);
   if (is_object($value) && hasMember($value, 'toString'))
@@ -52,6 +55,7 @@ function sum () {
 }
 
 function opConcat () {
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   $arguments = func_get_args();
 
   version_assert and assertTrue(count($arguments) >= 1);
@@ -76,6 +80,7 @@ function opConcat () {
 
 function opEquals ($lhs, $rhs) {
   version_assert and assertTrue(count(func_get_args()) == 2);
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   if (is_object($lhs) && hasMember($lhs, 'opEquals'))
     return $lhs->opEquals($rhs);
   else if (is_object($rhs) && hasMember($rhs, 'opEquals'))
@@ -86,6 +91,7 @@ function opEquals ($lhs, $rhs) {
 
 function opDispatch ($symbol, $member) {
   version_assert and assertTrue(count(func_get_args()) == 2);
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   if (is_array($symbol) && array_key_exists($member, $symbol))
     return $symbol[$member];
   if (is_object($symbol) && method_exists($symbol, $member))
@@ -100,6 +106,7 @@ function opDispatch ($symbol, $member) {
 }
 
 function opAccess ($symbol, $member) {
+  version_assert and assertTrue(count(debug_backtrace()) < 1024, "Infinite recursion detected");
   $proxy = opDispatch($symbol, $member);
   return is_callable($proxy) ? call_user_func($proxy) : $proxy;
 }
