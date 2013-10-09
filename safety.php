@@ -256,9 +256,13 @@ function exception_to_stdclass ($exception) {
           $args[$argumentIndex]->{'class'} = get_class($argument);
         else if (is_array($argument))
           $args[$argumentIndex]->length = count($argument);
-        else {
+        else if (is_string($argument)) {
           $args[$argumentIndex]->length = strlen($argument);
           $args[$argumentIndex]->value = substr($argument, 0, 300);
+        } else {
+          // todo: rewrite
+          $args[$argumentIndex]->length = 0;
+          $args[$argumentIndex]->value = 'unknown';
         }
       }
     unset($traceItem->args);
