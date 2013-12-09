@@ -116,6 +116,15 @@ function uncaught_exception_handler ($e) {
   exit;
 }
 
+function toString_throw ($e = null) {
+  echo "To string must not throw in php (duno why)\n";
+  if ($e !== null)
+    uncaught_exception_handler($e);
+  else
+    uncaught_exception_handler(new error('String must not throw in php'));
+  exit;
+}
+
 
 function error_report ($e) {
 
