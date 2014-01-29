@@ -115,11 +115,8 @@ function setup () {
     }
   }
 
-  foreach ($upgrades as $callable) {
-    if (is_file($_SERVER['dataPath'] . '/state/setup_' . sha1(serialize($callable))))
-      continue;
+  foreach ($upgrades as $callable)
     $callables[] = $callable;
-  }
 
   echo "\nRunning " . count($callables) . " setup(s):\n";
 
