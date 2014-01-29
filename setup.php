@@ -123,8 +123,6 @@ function setup () {
 
   echo "\nRunning " . count($callables) . " setup(s):\n";
 
-  $stubsTree = (object) array();
-
   foreach ($callables as $callable) {
     $id = (is_string($callable) ? $callable : $callable[0] . '::' . $callable[1]) . '()';
     echo '  ' . $id;
