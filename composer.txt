@@ -1,0 +1,7 @@
+{
+  "name": "luka8088/phops",
+  "description": "phops",
+  "require": {
+    "php": ">=5.3.0"
+  }
+}
