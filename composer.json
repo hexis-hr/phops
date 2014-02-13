@@ -8,6 +8,16 @@
     }
   ],
   "require": {
-    "php": ">=5.3.0"
+    "php": ">=5.3.0",
+    "facebook/webdriver": "@dev"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url":  "https://github.com/facebook/php-webdriver.git"
+    }
+  ],
+  "config": {
+    "vendor-dir": "external"
   }
 }
