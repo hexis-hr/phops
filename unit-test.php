@@ -6,8 +6,6 @@
  *
  */
 
-require_once(dirname(__FILE__) . '/externals/php-webdriver/__init__.php');
-
 class unitTestEnvironmentException extends safeException {}
 class unitTestRequiredException extends safeException {}
 

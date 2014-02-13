@@ -1,3 +1,0 @@
-[submodule "externals/php-webdriver"]
-	path = externals/php-webdriver
-	url = https://github.com/facebook/php-webdriver.git
