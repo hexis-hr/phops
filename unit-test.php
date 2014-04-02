@@ -8,6 +8,7 @@
 
 require_once(dirname(__FILE__) . '/externals/php-webdriver/__init__.php');
 
+class unitTestDisabledException extends safeException {}
 class unitTestEnvironmentException extends safeException {}
 class unitTestRequiredException extends safeException {}
 
@@ -132,6 +133,7 @@ function runUnitTests () {
   $result->tests = (object) array(
     'count' => count($tests),
     'all' => array(),
+    'disabled' => array(),
     'successes' => array(),
     'failures' => array(),
     'errors' => array(),
@@ -163,6 +165,11 @@ function runUnitTests () {
         $result->tests->all[$id]->status = 'success';
         $result->tests->successes[] = $id;
         isUnitTestRun($test, true);
+      } catch (unitTestDisabledException $e) {
+        echo ": disabled";
+        $result->tests->all[$id]->status = 'disabled';
+        $result->tests->disabled[] = $id;
+        isUnitTestRun($test, false);
       } catch (unitTestRequiredException $e) {
         echo ": delayed";
         $tests[] = $test;
@@ -192,18 +199,20 @@ function runUnitTests () {
   $flushResult();
 
   echo "\nResults: \n";
-  echo "  Total:   " . $result->tests->count . "\n";
-  echo "  Success: " . count($result->tests->successes) . "\n";
-  echo "  Failure: " . count($result->tests->failures) . "\n";
-  echo "  Errors:  " . count($result->tests->errors) . "\n";
+  echo "  Total:    " . $result->tests->count . "\n";
+  echo "  Success:  " . count($result->tests->successes) . "\n";
+  echo "  Disabled: " . count($result->tests->disabled) . "\n";
+  echo "  Failure:  " . count($result->tests->failures) . "\n";
+  echo "  Errors:   " . count($result->tests->errors) . "\n";
 
-  if (count($result->tests->successes) != $result->tests->count)
+  if (count($result->tests->successes) + count($result->tests->disabled) != $result->tests->count)
     echo "\nTests completed with failures, errors or skipped tests !\n\n";
   else
     echo "\nEverything completed successfully !\n\n";
 
   echo "Done\n";
 
+  return count($result->tests->failures) + count($result->tests->errors);
 }
 
 function isUnitTestRun ($test, $set = null) {
