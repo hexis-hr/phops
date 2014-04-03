@@ -132,6 +132,7 @@ function runUnitTests () {
 
   $result->tests = (object) array(
     'count' => count($tests),
+    'time' => 0,
     'all' => array(),
     'disabled' => array(),
     'successes' => array(),
@@ -160,8 +161,14 @@ function runUnitTests () {
       $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
       echo '  ' . $id;
       try {
-        call_user_func($test);
-        echo ": success";
+        $e = null;
+        $testStart = microtime(true);
+        try { call_user_func($test); } catch (Exception $e) {}
+        $result->tests->all[$id]->time = microtime(true) - $testStart;
+        $result->tests->time += $result->tests->all[$id]->time;
+        if ($e !== null)
+          throw $e;
+        echo ": success (" . timeDiffSignature($result->tests->all[$id]->time) . ")";
         $result->tests->all[$id]->status = 'success';
         $result->tests->successes[] = $id;
         isUnitTestRun($test, true);
@@ -174,7 +181,7 @@ function runUnitTests () {
         echo ": delayed";
         $tests[] = $test;
       } catch (unitTestEnvironmentException $e) {
-        echo ": error";
+        echo ": error (" . timeDiffSignature($result->tests->all[$id]->time) . ")";
         $result->tests->all[$id]->status = 'error';
         $result->tests->all[$id]->report = error_report($e);
         $result->tests->all[$id]->message = $e->getMessage();
@@ -182,7 +189,7 @@ function runUnitTests () {
         $result->tests->errors[] = $id;
         isUnitTestRun($test, false);
       } catch (Exception $e) {
-        echo ": failure - " . $e->getMessage();
+        echo ": failure (" . timeDiffSignature($result->tests->all[$id]->time) . ") - " . $e->getMessage();
         $result->tests->all[$id]->status = 'failure';
         $result->tests->all[$id]->report = error_report($e);
         $result->tests->all[$id]->message = $e->getMessage();
@@ -199,7 +206,7 @@ function runUnitTests () {
   $flushResult();
 
   echo "\nResults: \n";
-  echo "  Total:    " . $result->tests->count . "\n";
+  echo "  Total:    " . $result->tests->count . " (" . timeDiffSignature($result->tests->time) . ")\n";
   echo "  Success:  " . count($result->tests->successes) . "\n";
   echo "  Disabled: " . count($result->tests->disabled) . "\n";
   echo "  Failure:  " . count($result->tests->failures) . "\n";

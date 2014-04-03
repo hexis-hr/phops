@@ -476,3 +476,10 @@ function timestampSignature () {
   $dateTime->setTimezone(new DateTimeZone('UTC'));
   return $dateTime->format('[Y-m-d H:i:s]');
 }
+
+function timeDiffSignature ($duration) {
+  if ($duration > 1)
+    return number_format($duration, 2) . 's';
+  else
+    return number_format($duration * 1000, 2) . 'ms';
+}
