@@ -9,6 +9,191 @@
 class unitTestEnvironmentException extends safeException {}
 class unitTestRequiredException extends safeException {}
 
+function runSetupTests () {
+
+  $result = (object) array();
+
+  $flushResult = function () use ($result) {
+    if (isset($_SERVER['setupTest_result']))
+      file_put_contents($_SERVER['setupTest_result'], json_encode($result) . "\n");
+  };
+
+  $flushResult();
+
+  $timestamp = microtime(true);
+  echo 'Listing files ..';
+  $files = array();
+
+  $setupTest_excludePath = array();
+  if (isset($_SERVER['setupTest_excludePath'])) {
+    $addPaths = function ($paths) use (&$setupTest_excludePath, &$addPaths) {
+      if (is_array($paths) || is_object($paths))
+        foreach ($paths as $path)
+          $addPaths($path);
+      else
+        $setupTest_excludePath[] = rtrim(str_replace(array('\\', '/'), array('/', '/'), $paths), '/') . '/';
+    };
+    $addPaths($_SERVER['setupTest_excludePath']);
+  }
+
+  $isExcluded = function ($file) use ($setupTest_excludePath) {
+    $sFile = str_replace(array('\\', '/'), array('/', '/'), $file);
+    foreach ($setupTest_excludePath as $excludePath)
+      if (substr($sFile, 0, strlen($excludePath)) == $excludePath)
+        return true;
+    return false;
+  };
+
+  foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($_SERVER['basePath'])) as $file) {
+
+    if (microtime(true) > $timestamp + 1) {
+      $timestamp = microtime(true);
+      echo '.';
+    }
+
+    if ($isExcluded($file))
+      continue;
+
+    if (in_array($file->getExtension(), array('php'))) {
+      $fileContent = file_get_contents($file);
+      if (preg_match('/(?si)function\s*setuptest/', $fileContent) == 0)
+        continue;
+      $files[] = $file;
+    }
+
+  }
+
+  echo ' ' . count($files) . "\n";
+
+  usort($files, function ($lhs, $rhs) {
+    return filemtime($rhs) - filemtime($lhs);
+  });
+
+  echo 'Including files ..';
+  $i = 0;
+
+  // php include can overwrite variable values so we need to isolate include in a function
+  $includeFile = function ($file) {
+    ob_start();
+    include_once (string) $file;
+    ob_end_clean();
+  };
+
+  foreach ($files as $file) {
+    if (microtime(true) > $timestamp + 1) {
+      $timestamp = microtime(true);
+      echo '.';
+    }
+    if (in_array(realpath($file), get_included_files()))
+      continue;
+    $i++;
+    $includeFile($file);
+  }
+  echo ' ' . $i . "\n";
+
+  $tests = array();
+
+  echo 'Listing tests ..';
+  $functions = get_defined_functions();
+  foreach (array_merge($functions['internal'], $functions['user']) as $function) {
+    if (microtime(true) > $timestamp + 1) {
+      $timestamp = microtime(true);
+      echo '.';
+    }
+    if (substr(strtolower($function), 0, 9) == 'setuptest')
+      $tests[] = $function;
+  }
+
+  foreach (get_declared_classes() as $class) {
+    foreach (get_class_methods($class) as $method) {
+      if (microtime(true) > $timestamp + 1) {
+        $timestamp = microtime(true);
+        echo '.';
+      }
+      $reflector = new ReflectionMethod($class, $method);
+      if ($reflector->getDeclaringClass()->getName() != $class)
+        continue;
+      if (substr(strtolower($method), 0, 9) == 'setuptest')
+        $tests[] = array($class, $method);
+    }
+  }
+
+  echo ' ' . count($tests) . "\n";
+
+  $result->tests = (object) array(
+    'count' => count($tests),
+    'all' => array(),
+    'successes' => array(),
+    'failures' => array(),
+    'errors' => array(),
+  );
+
+  usort($tests, function ($lhs, $rhs) {
+    $lhsReflection = is_string($lhs) ? new ReflectionFunction($lhs) : new ReflectionMethod($lhs[0], $lhs[1]);
+    $rhsReflection = is_string($rhs) ? new ReflectionFunction($rhs) : new ReflectionMethod($rhs[0], $rhs[1]);
+    return filemtime($rhsReflection->getFileName()) - filemtime($lhsReflection->getFileName());
+  });
+
+  echo "\nRunning " . count($tests) . " tests:\n";
+
+  foreach ($tests as $key => $test) {
+    $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+    $result->tests->all[$id] = (object) array('status' => 'unknown');
+  }
+
+  $flushResult();
+
+  do {
+    $unhandledCount = count($tests);
+    foreach ($tests as $key => $test) {
+      $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+      echo '  ' . $id;
+      try {
+        call_user_func($test);
+        echo ": success";
+        $result->tests->all[$id]->status = 'success';
+        $result->tests->successes[] = $id;
+        isSetupTestRun($test, true);
+      } catch (Exception $e) {
+        echo ": failure - " . $e->getMessage();
+        $result->tests->all[$id]->status = 'failure';
+        $result->tests->all[$id]->report = error_report($e);
+        $result->tests->all[$id]->message = $e->getMessage();
+        $result->tests->all[$id]->trace = (string) $e;
+        $result->tests->failures[] = $id;
+        isSetupTestRun($test, false);
+      }
+      unset($tests[$key]);
+      echo "\n";
+      $flushResult();
+    }
+  } while (count($tests) > 0 && count($tests) < $unhandledCount);
+
+  $flushResult();
+
+  echo "\nResults: \n";
+  echo "  Total:   " . $result->tests->count . "\n";
+  echo "  Success: " . count($result->tests->successes) . "\n";
+  echo "  Failure: " . count($result->tests->failures) . "\n";
+  echo "  Errors:  " . count($result->tests->errors) . "\n";
+
+  if (count($result->tests->successes) != $result->tests->count)
+    echo "\nTests completed with failures, errors or skipped tests !\n\n";
+  else
+    echo "\nEverything completed successfully !\n\n";
+
+  echo "Done\n";
+
+}
+
+function isSetupTestRun ($test, $set = null) {
+  static $runedTests = array();
+  $id = (is_string($test) ? $test : $test[0] . '::' . $test[1]) . '()';
+  if (isset($set))
+    $runedTests[$id] = $set;
+  return isset($runedTests[$id]) ? $runedTests[$id] : null;
+}
+
 function runUnitTests () {
 
   $result = (object) array();
