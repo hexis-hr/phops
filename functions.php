@@ -476,3 +476,25 @@ function timestampSignature () {
   $dateTime->setTimezone(new DateTimeZone('UTC'));
   return $dateTime->format('[Y-m-d H:i:s]');
 }
+
+function execute ($callback) {
+
+  $exitCode = 0;
+
+  try {
+
+    $result = $callback();
+    enforce($result == 0, 'Exit code: ' . $result);
+
+  } catch (Exception $e) {
+    echo "\nFail\n\n";
+    echo $e;
+    $exitCode = $e->getCode();
+    if ($exitCode == 0)
+      $exitCode = 1;
+    echo "\nExit code: $exitCode\n";
+  }
+
+  exit($exitCode);
+
+}
