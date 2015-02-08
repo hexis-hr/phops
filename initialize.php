@@ -28,6 +28,7 @@ require_once(dirname(__FILE__) . '/index.php');
 require_once(dirname(__FILE__) . '/mail.php');
 require_once(dirname(__FILE__) . '/overload.php');
 require_once(dirname(__FILE__) . '/profile.php');
+require_once(dirname(__FILE__) . '/resource.php');
 require_once(dirname(__FILE__) . '/safety.php');
 require_once(dirname(__FILE__) . '/setup.php');
 require_once(dirname(__FILE__) . '/stub.php');
