@@ -7,7 +7,11 @@
  */
 
 function resource () {
-  return resourceContainer::instance();
+  $arguments = func_get_args();
+  $container = resourceContainer::instance();
+  if (count($arguments) == 0)
+    return $container;
+  return call_user_func_array($container[$arguments[0]], array_slice($arguments, 1));
 }
 
 class resourceContainer implements ArrayAccess {
@@ -39,8 +43,6 @@ class resourceContainer implements ArrayAccess {
     $this->autoload($id);
 
     if ($this->isInitialized($id)) {
-      #if (!self::isFunction($id))
-      #  return $this->resources[$id];
       if (!self::isArray($id))
         return $this->resources[$id];
       $result = array();
@@ -89,7 +91,6 @@ class resourceContainer implements ArrayAccess {
   }
 
   function isRegistered ($id) {
-    #version_assert and assertTrue($this->isInitialized($id));
     return array_key_exists($id, $this->initializators);
   }
 
@@ -179,12 +180,12 @@ class resourceInvokable {
     $this->invokable = $invokable;
   }
 
-  function __invoke ($arguments) {
-    return call_user_func_array($this->invokable, $arguments);
+  function __invoke () {
+    return call_user_func_array($this->invokable, func_get_args());
   }
 
   function invoke () {
-    return $this->__invoke(func_get_args());
+    return call_user_func_array($this->invokable, func_get_args());
   }
 
 }
