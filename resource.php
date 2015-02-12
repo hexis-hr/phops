@@ -7,10 +7,10 @@
  */
 
 function resource () {
-  return resource_::instance();
+  return resourceContainer::instance();
 }
 
-class resource_ implements ArrayAccess {
+class resourceContainer implements ArrayAccess {
 
   static $_instance = null;
 
@@ -30,62 +30,94 @@ class resource_ implements ArrayAccess {
   protected $initializators = array();
   protected $resources = array();
 
-  function offsetExists ($offset) {
-    $this->autoload($offset);
-    return $this->registered($offset);
+  function offsetExists ($id) {
+    $this->autoload($id);
+    return $this->isRegistered($id);
   }
 
-  function offsetGet ($offset) {
-    $this->autoload($offset);
-    if (array_key_exists($offset, $this->resources))
-      return $this->resources[$offset];
-    if (array_key_exists($offset, $this->initializators)) {
-      $this->resources[$offset] = $this->initializators[$offset]();
-      return $this->resources[$offset];
+  function offsetGet ($id) {
+    $this->autoload($id);
+
+    if ($this->isInitialized($id)) {
+      #if (!self::isFunction($id))
+      #  return $this->resources[$id];
+      if (!self::isArray($id))
+        return $this->resources[$id];
+      $result = array();
+      foreach ($this->resources[$id] as $resource)
+        $result[] = $resource;
+      return $result;
     }
-    assertTrue(false, "Resource *$offset* not found.");
+
+    if ($this->isRegistered($id)) {
+      $initialize = function ($id, $initializator) {
+        if (resourceContainer::isFunction($id) || !is_callable($initializator))
+          return new resourceInvokable($initializator);
+        else
+          return call_user_func($initializator);
+      };
+      if (self::isArray($id)) {
+        $this->resources[$id] = array();
+        foreach ($this->initializators[$id] as $initializator)
+          $this->resources[$id][] = $initialize($id, $initializator);
+      } else {
+        $this->resources[$id] = $initialize($id, $this->initializators[$id]);
+      }
+      return $this->resources[$id];
+    }
+
+    assertTrue(false, "Resource *$id* not found.");
   }
 
-  function offsetSet ($offset, $value) {
-    version_assert and assertTrue(!$this->registered($offset), "Resource *$offset* already exists.");
-    $this->initializators[$offset] = $value;
+  function offsetSet ($id, $value) {
+    version_assert and assertTrue(!$this->isInitialized($id), "Resource *$id* already initialized.");
+    if (self::isArray($id)) {
+      if (!array_key_exists($id, $this->initializators))
+        $this->initializators[$id] = array();
+      $this->initializators[$id][] = $value;
+    } else {
+      $this->initializators[$id] = $value;
+    }
   }
 
-  function offsetUnset ($offset) {
-    assertTrue(false);
+  function offsetUnset ($id) {
+    assertTrue(false, "Unsetting resource *$id* is prohibited.");
   }
 
-  function registered ($id) {
-    return array_key_exists($id, $this->resources) || array_key_exists($id, $this->initializators);
+  function isInitialized ($id) {
+    return array_key_exists($id, $this->resources);
+  }
+
+  function isRegistered ($id) {
+    #version_assert and assertTrue($this->isInitialized($id));
+    return array_key_exists($id, $this->initializators);
+  }
+
+  function isFullyRegistered ($id) {
+    if ($this->isInitialized($id))
+      return true;
+    if (!self::isArray($id) && $this->isRegistered($id))
+      return true;
+    return false;
   }
 
   function autoload ($id) {
 
-    if ($this->registered($id))
+    if ($this->isFullyRegistered($id))
       return;
 
-    $cacheKey = 'phops_UqcV7Ql9MoDwpUlhwT08LsoM_resource_' . $id;
-
-    if (apc_exists($cacheKey) && is_file(apc_fetch($cacheKey))) {
-      include_once apc_fetch($cacheKey);
-      if ($this->registered($id))
+    if (apc_exists(self::cacheKey($id))) {
+      foreach (apc_fetch(self::cacheKey($id)) as $file)
+        if (is_file($file))
+          include_once $file;
+      if (!version_development || $this->isFullyRegistered($id))
         return;
     }
 
-    $file = $this->findFile($id);
-    include_once $file;
-    if ($file)
-      apc_store($cacheKey, $file);
-
-  }
-
-  function findFile ($id) {
-
-    if ($this->registered($id))
-      return '';
+    $foundInitializators = $this->initializators;
 
     foreach ($this->paths as $path) {
-      foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($_SERVER['basePath'])) as $file) {
+      foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $file) {
 
         if (!in_array($file->getExtension(), array('php')))
           continue;
@@ -96,14 +128,63 @@ class resource_ implements ArrayAccess {
 
         include_once $file;
 
-        if ($this->registered($id)) {
-          return $file->getRealPath();
+        $newInitializators = array_diff_key($this->initializators, $foundInitializators);
+
+        foreach ($newInitializators as $newInitializatorId => $newInitializator) {
+          $initializatorFiles = array();
+          if (apc_exists(self::cacheKey($newInitializatorId)))
+            $initializatorFiles = apc_fetch(self::cacheKey($newInitializatorId));
+          $initializatorFiles[] = $file->getRealPath();
+          apc_store(self::cacheKey($newInitializatorId), $initializatorFiles);
         }
+
+        $foundInitializators = $this->initializators;
+
+        if ($this->isFullyRegistered($id))
+          return;
 
       }
     }
 
-    return '';
+  }
+
+  static function unmangledId ($id) {
+    $unmangledId = $id;
+    if (substr($unmangledId, -2) == '()')
+      $unmangledId = substr($unmangledId, 0, -2);
+    if (substr($unmangledId, -2) == '[]')
+      $unmangledId = substr($unmangledId, 0, -2);
+    return $unmangledId;
+  }
+
+  static function isFunction ($id) {
+    return substr($id, -2) == '()';
+  }
+
+  static function isArray ($id) {
+    return substr($id, -2) == '[]' || substr($id, -4) == '[]()';
+  }
+
+  static function cacheKey ($id) {
+    return 'phops_UqcV7Ql9MoDwpUlhwT08LsoM_resource_' . $id;
+  }
+
+}
+
+class resourceInvokable {
+
+  protected $invokable;
+
+  function __construct ($invokable) {
+    $this->invokable = $invokable;
+  }
+
+  function __invoke ($arguments) {
+    return call_user_func_array($this->invokable, $arguments);
+  }
+
+  function invoke () {
+    return $this->__invoke(func_get_args());
   }
 
 }
