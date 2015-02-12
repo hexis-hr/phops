@@ -124,7 +124,7 @@ class resourceContainer implements ArrayAccess {
           continue;
 
         $fileContent = file_get_contents($file);
-        if (preg_match('/(?si)resource\(\)\[/', $fileContent) == 0)
+        if (preg_match('/(?si)resource\(/', $fileContent) == 0)
           continue;
 
         include_once $file;
