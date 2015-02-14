@@ -110,3 +110,41 @@ function opAccess ($symbol, $member) {
   $proxy = opDispatch($symbol, $member);
   return is_callable($proxy) ? call_user_func($proxy) : $proxy;
 }
+
+function invoke ($name, $arguments) {
+
+  $realignedArguments = $arguments;
+
+  if (count(array_filter($arguments, function($value, $name) { return !is_int($name); }, ARRAY_FILTER_USE_BOTH)) > 0) {
+
+    if (is_object($name))
+      $reflection = new ReflectionFunction($name->toFunction());
+    else if (is_array($name))
+      $reflection = new ReflectionMethod($name[0], $name[1]);
+    else
+      $reflection = new ReflectionFunction($name);
+
+    $realignedArguments = array();
+    foreach ($reflection->getParameters() as $argumentReflection) {
+      $value = null;
+      version_assert and assertTrue($argumentReflection->isDefaultValueAvailable() ||
+        array_key_exists($argumentReflection->name, $arguments));
+      if ($argumentReflection->isDefaultValueAvailable())
+        $value = $argumentReflection->getDefaultValue();
+      if (array_key_exists($argumentReflection->name, $arguments))
+        $value = $arguments[$argumentReflection->name];
+      if ($argumentReflection->isDefaultValueAvailable()) {
+        switch (gettype($argumentReflection->getDefaultValue())) {
+          case 'boolean':
+            $value = $value && $value !== '0' && $value !== 'false' ? true : false;
+            break;
+        }
+      }
+      $realignedArguments[] = $value;
+    }
+
+  }
+
+  return call_user_func_array($name, $realignedArguments);
+
+}

@@ -190,4 +190,8 @@ class resourceInvokable {
     return call_user_func_array($this->invokable, func_get_args());
   }
 
+  function toFunction () {
+    return $this->invokable;
+  }
+
 }

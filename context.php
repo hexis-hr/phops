@@ -7,18 +7,18 @@
  */
 
 class context {
-  
+
   static $stacks = array();
 
   static function exists ($type) {
     return hasMember(self::$stacks, $type) && count(self::$stacks[$type]) > 0;
   }
-  
+
   static function current ($type) {
     version_assert and assertTrue(self::exists($type));
     return end(self::$stacks[$type]);
   }
-  
+
   static function __callStatic ($name, $arguments) {
     version_assert and assertTrue(count($arguments) == 0);
     return self::current($name);
@@ -36,7 +36,7 @@ class context {
     version_assert and assertTrue(self::exists($type));
     array_pop(self::$stacks[$type]);
   }
-  
+
   static function invoke ($type, $value, $callback) {
     self::enter($type, $value);
     try { $result = call_user_func($callback); }
