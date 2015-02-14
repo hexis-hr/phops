@@ -11,6 +11,8 @@ function resource () {
   $container = resourceContainer::instance();
   if (count($arguments) == 0)
     return $container;
+  if (count($arguments) == 1)
+    return $container[$arguments[0]];
   return call_user_func_array($container[$arguments[0]], array_slice($arguments, 1));
 }
 
