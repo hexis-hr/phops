@@ -128,7 +128,7 @@ function invoke ($name, $arguments) {
     foreach ($reflection->getParameters() as $argumentReflection) {
       $value = null;
       version_assert and assertTrue($argumentReflection->isDefaultValueAvailable() ||
-        array_key_exists($argumentReflection->name, $arguments));
+        array_key_exists($argumentReflection->name, $arguments), "Argument *{$argumentReflection->name}* missing.");
       if ($argumentReflection->isDefaultValueAvailable())
         $value = $argumentReflection->getDefaultValue();
       if (array_key_exists($argumentReflection->name, $arguments))
