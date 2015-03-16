@@ -16,7 +16,7 @@ function debugMessage ($message) {
   $message = isset($args[1]) ? $args[1] : $message;
 
   $backtrace = debug_backtrace();
-  
+
   $i = 0;
   while (isset($backtrace[$i])) {
     $backtraceEntry = (object) $backtrace[$i];
@@ -25,14 +25,14 @@ function debugMessage ($message) {
       continue;
     break;
   }
-  
+
   if (isset($backtrace[$i], $backtrace[$i]['class']))
     $backtraceEntry->{'class'} = $backtrace[$i]['class'];
   if (isset($backtrace[$i], $backtrace[$i]['type']))
     $backtraceEntry->{'type'} = $backtrace[$i]['type'];
   if (isset($backtrace[$i], $backtrace[$i]['function']))
     $backtraceEntry->{'function'} = $backtrace[$i]['function'];
-    
+
   // format:
   // info is the message type (optional)
   // #5/6 is the request id / session id
@@ -40,20 +40,20 @@ function debugMessage ($message) {
   //
   // [2000-01-01 18:23:54] #5 (/path/to/file:123) info
   //   message text
-  
+
   if (!isset($_SERVER['requestId']))
     $_SERVER['requestId'] = randomKey(24);
-  
+
   if (!session_id())
     session_start();
-    
+
   $timestamp = microtime(true);
-  
+
   if (!isset($GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog']))
     $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'] = array();
-    
+
   static $counter = 0;
-  
+
   $GLOBALS['__7iPYslyzfKzZBtZBc7T6aglQ_debugLog'][] = (object) array(
     'time' => $timestamp,
     'number' => ++$counter,
@@ -169,11 +169,11 @@ function debugBacktrace () {
 }
 
 class debugBacktrace_class {
-  
+
   function __construct () {
     $this->backtrace = debug_backtrace();
   }
-  
+
   function __toString () {
     foreach ($this->backtrace as $k => $v)
       $this->backtrace[$k]['object'] = null;
@@ -181,7 +181,7 @@ class debugBacktrace_class {
     var_dump($this->backtrace);
     return ob_get_clean();
   }
-  
+
 }
 
 function debug_onShutdown ($callback) {
@@ -208,7 +208,7 @@ if (debugMode) {
     if (isset($_SERVER['HTTP_HOST']))
 			$url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] ? 'https' : 'http')
         . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
-    debugMessage("instance startup" . ($url ? " on url: $url" : ''));    
+    debugMessage("instance startup" . ($url ? " on url: $url" : ''));
     register_shutdown_function('debug_instance_shutdown');
   }
   $debugInit = true;
