@@ -36,6 +36,10 @@ class resourceContainer implements ArrayAccess {
   protected $initializators = array();
   protected $resources = array();
 
+  function exist ($id) {
+    return $this->offsetExists($id);
+  }
+
   function offsetExists ($id) {
     $this->autoload($id);
     return $this->isRegistered($id);
