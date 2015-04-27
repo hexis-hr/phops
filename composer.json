@@ -19,5 +19,8 @@
   ],
   "config": {
     "vendor-dir": "external"
+  },
+  "autoload": {
+    "files": ["initialize.php"]
   }
 }
