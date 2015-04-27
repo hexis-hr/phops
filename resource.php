@@ -59,10 +59,12 @@ class resourceContainer implements ArrayAccess {
 
     if ($this->isRegistered($id)) {
       $initialize = function ($id, $initializator) {
-        if (resourceContainer::isFunction($id) || !is_callable($initializator))
+        if (resourceContainer::isFunction($id))
           return new resourceInvokable($initializator);
-        else
+        else if (is_callable($initializator))
           return call_user_func($initializator);
+        else
+          return $initializator;
       };
       if (self::isArray($id)) {
         $this->resources[$id] = array();
