@@ -33,6 +33,9 @@ class resourceContainer implements ArrayAccess {
     $this->paths[] = $path;
   }
 
+  // Used by autoloader to infer resource source for cache purposes.
+  protected $newInitializators = [];
+
   protected $initializators = array();
   protected $resources = array();
 
@@ -80,6 +83,7 @@ class resourceContainer implements ArrayAccess {
   }
 
   function offsetSet ($id, $value) {
+    $this->newInitializators[] = $id;
     version_assert and assertTrue(!$this->isInitialized($id), "Resource *$id* already initialized.");
     if (self::isArray($id)) {
       if (!array_key_exists($id, $this->initializators))
@@ -105,7 +109,13 @@ class resourceContainer implements ArrayAccess {
   function isFullyRegistered ($id) {
     if ($this->isInitialized($id))
       return true;
-    if (!self::isArray($id) && $this->isRegistered($id))
+    // Array registration can be spread across multiple files so we have to assume that
+    // there might be some parts missing.
+    if ($this->isRegistered($id) && !self::isArray($id))
+      return true;
+    // In case there are no code changes (non-development environment) we assume that autoloader
+    // loads all registration fully.
+    if ($this->isRegistered($id) && !version_development)
       return true;
     return false;
   }
@@ -119,14 +129,17 @@ class resourceContainer implements ArrayAccess {
       foreach (apc_fetch(self::cacheKey($id)) as $file)
         if (is_file($file))
           include_once $file;
-      if (!version_development || $this->isFullyRegistered($id))
+      if ($this->isFullyRegistered($id))
         return;
     }
 
-    $foundInitializators = $this->initializators;
+    // It is possible that resource is registered before autoload kicks in, in such cases
+    // we have to ensure that cache entry exists.
+    if (!apc_exists(self::cacheKey($id)))
+      apc_store(self::cacheKey($id), []);
 
-    foreach ($this->paths as $path) {
-      foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path)) as $file) {
+    foreach ($this->paths as $path)
+      foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path)) as $file) {
 
         if (!in_array($file->getExtension(), array('php')))
           continue;
@@ -135,25 +148,26 @@ class resourceContainer implements ArrayAccess {
         if (preg_match('/(?si)resource\(/', $fileContent) == 0)
           continue;
 
+        $this->newInitializators = [];
+
         include_once $file;
 
-        $newInitializators = array_diff_key($this->initializators, $foundInitializators);
+        $newInitializators = $this->newInitializators;
 
-        foreach ($newInitializators as $newInitializatorId => $newInitializator) {
+        foreach ($newInitializators as $newInitializator) {
           $initializatorFiles = array();
-          if (apc_exists(self::cacheKey($newInitializatorId)))
-            $initializatorFiles = apc_fetch(self::cacheKey($newInitializatorId));
+          if (apc_exists(self::cacheKey($newInitializator)))
+            $initializatorFiles = apc_fetch(self::cacheKey($newInitializator));
           $initializatorFiles[] = $file->getRealPath();
-          apc_store(self::cacheKey($newInitializatorId), $initializatorFiles);
+          apc_store(self::cacheKey($newInitializator), $initializatorFiles);
         }
 
-        $foundInitializators = $this->initializators;
-
-        if ($this->isFullyRegistered($id))
+        // Array registration can be spread across multiple files so we have to scan
+        // everything in order to be sure it's fully registered.
+        if ($this->isRegistered($id) && !self::isArray($id))
           return;
 
       }
-    }
 
   }
 
