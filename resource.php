@@ -33,6 +33,9 @@ class resourceContainer implements ArrayAccess {
     $this->paths[] = $path;
   }
 
+  // Store resource searches to prevent multiple searches of non existing resources.
+  protected $searches = [];
+
   // Used by autoloader to infer resource source for cache purposes.
   protected $newInitializators = [];
 
@@ -114,8 +117,26 @@ class resourceContainer implements ArrayAccess {
     if ($this->isRegistered($id) && !self::isArray($id))
       return true;
     // In case there are no code changes (non-development environment) we assume that autoloader
-    // loads all registration fully.
-    if ($this->isRegistered($id) && !version_development)
+    // found and loaded the resource fully.
+    if (!version_development && $this->isRegistered($id))
+      return true;
+    return false;
+  }
+
+  /**
+   * Indicates whether the resource has already been searched for meaning there is no need to search for
+   * it or any missing part again. If true it implies that all resource parts are known and that resource
+   * is ready for initialization.
+   */
+  function isSearched ($id) {
+    if (array_key_exists($id, $this->searches))
+      return true;
+    if ($this->isFullyRegistered($id))
+      return true;
+    // In case there are no code changes (non-development environment) we assume that autoloader
+    // searched through the entire code base. Even is the resource is not registered (because it does not exist)
+    // cache existence proves that resources has been searched for.
+    if (!version_development && apc_exists(self::cacheKey($id)))
       return true;
     return false;
   }
@@ -132,6 +153,11 @@ class resourceContainer implements ArrayAccess {
       if ($this->isFullyRegistered($id))
         return;
     }
+
+    // Make sure to search for a resource only once, even if it does not exist.
+    if ($this->isSearched($id))
+      return;
+    $this->searches[$id] = true;
 
     // It is possible that resource is registered before autoload kicks in, in such cases
     // we have to ensure that cache entry exists.
