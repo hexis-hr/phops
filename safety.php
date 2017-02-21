@@ -577,9 +577,22 @@ function render_exception ($e) {
       if (isset($traceItem->snippet->content)) {
         echo '<pre class="snippet">';
         $lines = explode("\n", htmlspecialchars($traceItem->snippet->content));
-        if (array_key_exists($traceItem->line - $traceItem->snippet->beginLine - 1, $lines))
+        if (array_key_exists($traceItem->line - $traceItem->snippet->beginLine - 1, $lines)) {
           $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] = "<strong style='color: red;'>"
             . rtrim($lines[$traceItem->line - $traceItem->snippet->beginLine - 1]) . "</strong>";
+          if (isset($traceItem->file)) {
+            try {
+              $imageHash = md5(trim(exec('git blame -L' . $traceItem->line . ',' . $traceItem->line
+                . ' ' . $traceItem->file . ' -p | grep "author-mail" | cut -d\' \' -f2-'), '<>'));
+              $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] .= "<strong style='color: red;'>&nbsp;// BLAME: "
+                . exec('git blame -L' . $traceItem->line . ',' . $traceItem->line
+                  . ' ' . $traceItem->file . ' -p | grep "author[^-]" | cut -d\' \' -f2-')
+                . "</strong>";
+              $lines[$traceItem->line - $traceItem->snippet->beginLine - 1] .=
+                "&nbsp;<img src='http://www.gravatar.com/avatar/" . $imageHash . "?d=404'>";
+            } catch (\Exception $e) {}
+          }
+        }
         foreach ($lines as $lineIndex => $lineContent) {
           $lineNumber = $traceItem->snippet->beginLine + $lineIndex + 1;
           $lines[$lineIndex] = str_pad($lineNumber, strlen($traceItem->snippet->beginLine) + 1,
