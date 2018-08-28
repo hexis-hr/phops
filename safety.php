@@ -11,14 +11,14 @@
  *
  */
 
-class throwable extends Exception {}
+class _throwable extends Exception {}
 
-class error extends throwable {}
-class safeException extends throwable {}
+class _error extends _throwable {}
+class safeException extends _throwable {}
 
-class phpError extends error {}
+class phpError extends _error {}
 class phpShutdownError extends phpError {}
-class assertError extends error {}
+class assertError extends _error {}
 
 
 // assertation indicates a code bug
